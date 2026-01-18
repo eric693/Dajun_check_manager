@@ -404,8 +404,8 @@ async function saveEmployeeData() {
         
         showNotification('儲存中...', 'info');
         
-        // ⭐⭐⭐ 修正：確保 action 參數在最前面
-        let params = `action=updateEmployeeOnboardingData&token=${token}`;
+        // ⭐⭐⭐ 修正：只傳 action 名稱，不包含 action= 和 token=
+        let params = `updateEmployeeOnboardingData`;
         
         for (const [key, value] of Object.entries(updateData)) {
             if (value) {
@@ -413,8 +413,11 @@ async function saveEmployeeData() {
             }
         }
         
-        // ⭐⭐⭐ 修正：使用完整的 URL
+        console.log('📤 API 請求:', params);
+        
         const res = await callApifetch(params);
+        
+        console.log('📥 API 回應:', res);
         
         if (res.ok) {
             showNotification('✅ 資料已成功儲存', 'success');
@@ -428,7 +431,6 @@ async function saveEmployeeData() {
         showNotification('儲存失敗：' + error.message, 'error');
     }
 }
-
 /**
  * 渲染簽核狀態
  */
