@@ -154,6 +154,22 @@ function doGet(e) {
       //   return respond1(handleSaveMonthlySalary(e.parameter));
       case "getAllMonthlySalary":
         return respond1(handleGetAllMonthlySalary(e.parameter));
+      
+      // ==================== 入職切結書系統 ====================
+      case "getEmployeeOnboardingData":
+        return respond1(handleGetEmployeeOnboardingData(e.parameter));
+      
+      case "updateEmployeeOnboardingData":
+        return respond1(handleUpdateEmployeeOnboardingData(e.parameter));
+      
+      case "submitOnboardingAgreement":
+        return respond1(handleSubmitOnboardingAgreement(e.parameter));
+      
+      case "getPendingOnboardingRequests":
+        return respond1(handleGetPendingOnboardingRequests(e.parameter));
+      
+      case "reviewOnboarding":
+        return respond1(handleReviewOnboarding(e.parameter));
        // ==================== 日薪系統 ====================
       case "setDailyEmployee":
         return respond1(handleSetDailyEmployee(e.parameter));
