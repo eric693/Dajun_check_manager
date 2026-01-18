@@ -1618,6 +1618,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             initOnboardingTab();
         });
     }
+
+    const tabEquipmentBtn = document.getElementById('tab-equipment-btn');
+    if (tabEquipmentBtn) {
+        tabEquipmentBtn.addEventListener('click', () => {
+            switchTab('equipment-view');
+            initEquipmentTab();
+        });
+    }
+    
+    // 👇 新增：綁定裝備領用表的儲存按鈕
+    const saveEquipmentBtn = document.getElementById('save-equipment-btn');
+    if (saveEquipmentBtn) {
+        saveEquipmentBtn.addEventListener('click', saveEquipmentIssue);
+    }
+    
     // 👇 新增：綁定用戶管理按鈕
     const refreshUsersBtn = document.getElementById('refresh-users-btn');
     if (refreshUsersBtn) {
