@@ -171,7 +171,12 @@
                             class="py-2 px-4 rounded-full font-bold text-sm text-gray-600 bg-gray-200 dark:text-gray-300 dark:bg-gray-700">
                         工作日誌
                     </button>
-
+                    <!-- 入職切結書按鈕 -->
+                    <button id="tab-onboarding-btn" 
+                            data-i18n="TAB_ONBOARDING" 
+                            class="py-2 px-4 rounded-full font-bold text-sm text-gray-600 bg-gray-200 dark:text-gray-300 dark:bg-gray-700">
+                        入職切結書
+                    </button>
                 </div>
                 
                 <!-- Dashboard View -->
@@ -968,6 +973,119 @@
                     </div>
                     
                 </section>
+                <!-- 入職切結書頁面 -->
+                <section id="onboarding-view" class="space-y-6" style="display: none;">
+                    
+                    <!-- 員工資料確認 -->
+                    <div class="card p-6">
+                        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-2">
+                            📋 入職資料確認
+                        </h2>
+                        <p class="text-gray-500 dark:text-gray-400 mb-4">
+                            請確認以下資料是否正確
+                        </p>
+                        
+                        <div id="employee-data-container" class="space-y-3">
+                            <div id="employee-data-loading" class="text-center py-4 text-gray-500">
+                                載入中...
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 切結書內容 -->
+                    <div class="card p-6">
+                        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">
+                            📜 入職切結書
+                        </h2>
+                        
+                        <div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg max-h-96 overflow-y-auto border-2 border-gray-300 dark:border-gray-600">
+                            <h3 class="font-bold text-lg mb-4">員工保密與競業禁止切結書</h3>
+                            
+                            <div class="space-y-4 text-sm">
+                                <p><strong>立切結書人：</strong><span id="agreement-name" class="ml-2 text-indigo-600 font-semibold">___________</span></p>
+                                
+                                <p>茲因本人受僱於 <strong>貴公司</strong>，為保護公司之營業秘密及智慧財產權，特立此切結書，並承諾遵守以下事項：</p>
+                                
+                                <div class="ml-6 space-y-3">
+                                    <p><strong>一、保密義務</strong></p>
+                                    <p class="ml-4">本人於任職期間及離職後，對於在職期間所知悉或持有之公司機密資訊，包括但不限於：客戶名單、商業計畫、技術資料、財務資訊等，應負保密義務，不得洩漏或供他人使用。</p>
+                                    
+                                    <p><strong>二、競業禁止</strong></p>
+                                    <p class="ml-4">本人離職後 <strong>一年內</strong>，不得從事與公司相同或類似之業務，亦不得受僱於與公司有競爭關係之企業。</p>
+                                    
+                                    <p><strong>三、智慧財產權歸屬</strong></p>
+                                    <p class="ml-4">本人於任職期間所完成之職務上著作、發明、創作等智慧財產權，其著作權及專利權歸公司所有。</p>
+                                    
+                                    <p><strong>四、違約責任</strong></p>
+                                    <p class="ml-4">如本人違反上述約定，願負一切法律責任，並賠償公司因此所受之損害。</p>
+                                </div>
+                                
+                                <p class="mt-6"><strong>此致</strong></p>
+                                <p><strong>貴公司</strong></p>
+                            </div>
+                        </div>
+                        
+                        <!-- 同意勾選 -->
+                        <div class="mt-6 space-y-4">
+                            <label class="flex items-start space-x-3 cursor-pointer">
+                                <input type="checkbox" 
+                                    id="agree-confidentiality" 
+                                    class="mt-1 w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500">
+                                <span class="text-sm text-gray-700 dark:text-gray-300">
+                                    我已詳細閱讀並同意遵守 <strong>保密義務條款</strong>
+                                </span>
+                            </label>
+                            
+                            <label class="flex items-start space-x-3 cursor-pointer">
+                                <input type="checkbox" 
+                                    id="agree-non-compete" 
+                                    class="mt-1 w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500">
+                                <span class="text-sm text-gray-700 dark:text-gray-300">
+                                    我已詳細閱讀並同意遵守 <strong>競業禁止條款</strong>
+                                </span>
+                            </label>
+                            
+                            <label class="flex items-start space-x-3 cursor-pointer">
+                                <input type="checkbox" 
+                                    id="agree-ip-rights" 
+                                    class="mt-1 w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500">
+                                <span class="text-sm text-gray-700 dark:text-gray-300">
+                                    我已詳細閱讀並同意 <strong>智慧財產權歸屬條款</strong>
+                                </span>
+                            </label>
+                            
+                            <label class="flex items-start space-x-3 cursor-pointer">
+                                <input type="checkbox" 
+                                    id="agree-liability" 
+                                    class="mt-1 w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500">
+                                <span class="text-sm text-gray-700 dark:text-gray-300">
+                                    我已詳細閱讀並同意 <strong>違約責任條款</strong>
+                                </span>
+                            </label>
+                        </div>
+                        
+                        <!-- 提交按鈕 -->
+                        <div class="mt-6">
+                            <button id="submit-onboarding-btn" 
+                                    disabled
+                                    class="w-full py-3 px-4 rounded-lg font-bold bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
+                                ✍️ 簽署並提交
+                            </button>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                                ⚠️ 請勾選所有條款後才能提交
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- 簽核狀態 -->
+                    <div id="onboarding-status-card" class="card p-6" style="display: none;">
+                        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-2">
+                            ✅ 簽核狀態
+                        </h2>
+                        <div id="onboarding-status-content"></div>
+                    </div>
+                    
+                </section>
                 <!-- Admin View -->
                 <section id="admin-view" class="space-y-6" style="display: none;">
                     <!-- 📢 公告管理 -->
@@ -1457,6 +1575,30 @@
                             </button>
                         </div>
                     </div>
+                    <!-- 入職簽核審核區塊 -->
+                    <div class="card p-6 mt-6">
+                        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-2">
+                            📋 待審核入職簽核
+                        </h2>
+                        <p class="text-gray-500 dark:text-gray-400 mb-4">
+                            審核新進員工的切結書簽核
+                        </p>
+                        
+                        <div id="pending-onboarding-container">
+                            <div id="onboarding-requests-loading" 
+                                class="text-center text-gray-500 dark:text-gray-400 py-4">
+                                正在載入...
+                            </div>
+                            <div id="onboarding-requests-empty" 
+                                class="text-center text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 p-4 rounded-lg" 
+                                style="display: none;">
+                                <p class="font-semibold">
+                                    太棒了！目前沒有待審核的入職簽核。
+                                </p>
+                            </div>
+                            <ul id="pending-onboarding-list" class="space-y-3"></ul>
+                        </div>
+                    </div>
                     <div class="card p-6 mt-6">
                         <h2 data-i18n="API_TEST_TITLE" class="text-xl font-bold text-gray-800 dark:text-white mb-2">API 測試區</h2>
                         <p data-i18n="API_TEST_DESCRIPTION" class="text-gray-500 dark:text-gray-400 mb-4">點擊下方按鈕以測試新的 API 功能。</p>
@@ -1494,6 +1636,6 @@
         <script src="leave.js"></script>
         <script src="salary.js"></script>
         <script src="worklog.js"></script>
-        
+        <script src="onboarding.js"></script>
     </body>
 </html>

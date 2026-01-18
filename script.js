@@ -1610,6 +1610,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const locationLatInput = document.getElementById('location-lat');
     const locationLngInput = document.getElementById('location-lng');
     const addLocationBtn = document.getElementById('add-location-btn');
+    const tabOnboardingBtn = document.getElementById('tab-onboarding-btn');
+
+    if (tabOnboardingBtn) {
+        tabOnboardingBtn.addEventListener('click', () => {
+            switchTab('onboarding-view');
+            initOnboardingTab();
+        });
+    }
     // 👇 新增：綁定用戶管理按鈕
     const refreshUsersBtn = document.getElementById('refresh-users-btn');
     if (refreshUsersBtn) {
@@ -2071,10 +2079,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // UI切換邏輯
     const switchTab = (tabId) => {
         // 修改這一行，加入 'shift-view'
-        const tabs = ['dashboard-view', 'monthly-view', 'location-view', 'shift-view', 'admin-view', 'overtime-view', 'leave-view', 'salary-view', 'worklog-view'];
+        const tabs = ['dashboard-view', 'monthly-view', 'location-view', 'shift-view', 'admin-view', 'overtime-view', 'leave-view', 'salary-view', 'worklog-view', 'onboarding-view'];
         
         // 修改這一行，加入 'tab-shift-btn'
-        const btns = ['tab-dashboard-btn', 'tab-monthly-btn', 'tab-location-btn', 'tab-shift-btn', 'tab-admin-btn', 'tab-overtime-btn', 'tab-leave-btn', 'tab-salary-btn', 'tab-worklog-btn'];
+        const btns = ['tab-dashboard-btn', 'tab-monthly-btn', 'tab-location-btn', 'tab-shift-btn', 'tab-admin-btn', 'tab-overtime-btn', 'tab-leave-btn', 'tab-salary-btn', 'tab-worklog-btn', 'tab-onboarding-btn'];
     
         // 1. 移除舊的 active 類別和 CSS 屬性
         tabs.forEach(id => {
@@ -2121,15 +2129,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadPendingLeaveRequests();
             displayAdminAnnouncements();
             initAdminAnalysis();
+            loadPendingOnboardingRequests();
             loadAllUsers();
         } else if (tabId === 'overtime-view') {
             initOvertimeTab();
         } else if (tabId === 'leave-view') {
             initLeaveTab();
-        } else if (tabId === 'salary-view') { // 👈 新增
+        } else if (tabId === 'salary-view') {
             initSalaryTab();
-        } else if (tabId === 'worklog-view') { // 👈 新增
+        } else if (tabId === 'worklog-view') { 
             initWorklogTab();
+        } else if (tabId === 'onboarding-view') {
+            initOnboardingTab();
         }
         
     };
