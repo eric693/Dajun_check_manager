@@ -724,9 +724,8 @@ async function reviewOnboarding(rowId, action) {
         console.log('   action:', action);
         console.log('   comment:', comment);
         
-        // 修正：改為正確的 API action 名稱（大寫 O）
         const res = await callApifetch(
-            `reviewOnboarding&token=${token}&rowId=${rowId}&action=${action}&comment=${encodeURIComponent(comment)}`
+            `reviewOnboarding&token=${token}&rowId=${rowId}&decision=${action}&comment=${encodeURIComponent(comment)}`
         );
         
         console.log('📥 API 回應:', res);
