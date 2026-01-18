@@ -239,7 +239,7 @@ function renderEmployeeData(employee, signature) {
         
         group.fields.forEach(field => {
             const value = getValue(field.key);
-            const fieldId = `input-${field.key.replace(/\s+/g, '-')}`;
+            const fieldId = `input-${encodeURIComponent(field.key).replace(/%/g, '_')}`;
             const requiredMark = field.required ? '<span class="text-red-500">*</span>' : '';
             const isFullWidth = field.width === 'full';
             const placeholder = field.placeholder || '';
@@ -726,6 +726,7 @@ async function reviewOnboarding(rowId, action) {
         console.log('   action:', action);
         console.log('   comment:', comment);
         
+        // 修正：改為正確的 API action 名稱（大寫 O）
         const res = await callApifetch(
             `reviewOnboarding&token=${token}&rowId=${rowId}&action=${action}&comment=${encodeURIComponent(comment)}`
         );
