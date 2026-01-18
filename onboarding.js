@@ -45,42 +45,73 @@ async function loadEmployeeOnboardingData() {
         
         if (loadingEl) loadingEl.style.display = 'none';
         
-        if (res.ok && res.data) {
+        // ⭐⭐⭐ 關鍵修改：即使找不到資料，也要渲染空表單
+        if (res.ok) {
             console.log('✅ API 回傳成功:', res.data);
             
-            renderEmployeeData(res.data.employee, res.data.signature);
+            // 如果有資料，使用現有資料
+            const employee = res.data?.employee || {};
+            const signature = res.data?.signature || null;
+            
+            renderEmployeeData(employee, signature);
             
             // 如果已簽核，顯示狀態
-            if (res.data.signature) {
-                renderSignatureStatus(res.data.signature);
+            if (signature) {
+                renderSignatureStatus(signature);
                 
                 // 如果已提交或已核准，禁用表單
-                if (res.data.signature.status !== 'PENDING') {
+                if (signature.status !== 'PENDING') {
                     disableOnboardingForm();
                 }
             }
         } else {
-            console.error('❌ API 回傳失敗:', res);
-            containerEl.innerHTML = `
-                <div class="text-center py-4 text-red-600 dark:text-red-400">
-                    ❌ ${res.msg || '無法載入資料，請稍後再試'}
+            // ⭐⭐⭐ 找不到資料時，渲染空白表單讓使用者填寫
+            console.log('⚠️ 找不到現有資料，渲染空白表單');
+            
+            // 渲染空白表單（傳入空物件和 null 簽核）
+            renderEmployeeData({}, null);
+            
+            // 顯示友善提示
+            const tipHtml = `
+                <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-lg">
+                    <p class="text-sm text-blue-800 dark:text-blue-300 font-semibold mb-2">
+                        ℹ️ 歡迎新進員工！
+                    </p>
+                    <p class="text-sm text-blue-700 dark:text-blue-400">
+                        這是您的第一次填寫，請詳細填寫所有必填欄位後，點擊「💾 儲存資料」。
+                    </p>
                 </div>
             `;
+            
+            // 將提示插入到表單後面
+            const form = document.getElementById('employee-data-form');
+            if (form) {
+                form.insertAdjacentHTML('afterend', tipHtml);
+            }
         }
         
     } catch (error) {
         console.error('❌ 載入失敗:', error);
         if (loadingEl) loadingEl.style.display = 'none';
         
+        // ⭐⭐⭐ 即使發生錯誤，也渲染空白表單
+        console.log('⚠️ 發生錯誤，渲染空白表單');
+        renderEmployeeData({}, null);
+        
         if (containerEl) {
-            containerEl.innerHTML = `
-                <div class="text-center py-4 text-red-600 dark:text-red-400">
-                    ❌ ${error.message || '載入失敗'}
+            const errorHtml = `
+                <div class="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-700 rounded-lg">
+                    <p class="text-sm text-yellow-800 dark:text-yellow-300 font-semibold mb-2">
+                        ⚠️ ${error.message || '載入失敗'}
+                    </p>
+                    <p class="text-sm text-yellow-700 dark:text-yellow-400">
+                        您仍可以填寫資料，填寫完成後點擊「💾 儲存資料」即可。
+                    </p>
                 </div>
             `;
+            
+            containerEl.insertAdjacentHTML('beforeend', errorHtml);
         }
-        
-        showNotification('載入失敗：' + error.message, 'error');
     }
 }
 
