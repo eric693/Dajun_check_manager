@@ -47,6 +47,10 @@ async function loadEmployeeOnboardingData() {
         if (loadingEl) loadingEl.style.display = 'none';
         
         if (res.ok && res.data) {
+            console.log('✅ API 回傳成功:', res.data);
+            console.log('   員工資料:', res.data.employee);
+            console.log('   簽核狀態:', res.data.signature);
+            
             renderEmployeeData(res.data.employee);
             
             // 如果已簽核，顯示狀態
@@ -59,6 +63,7 @@ async function loadEmployeeOnboardingData() {
                 }
             }
         } else {
+            console.error('❌ API 回傳失敗:', res);
             containerEl.innerHTML = `
                 <div class="text-center py-4 text-red-600 dark:text-red-400">
                     ❌ ${res.msg || '無法載入資料，請稍後再試'}
@@ -93,37 +98,56 @@ function renderEmployeeData(employee) {
         return;
     }
     
+    // ✅ 安全取值函數：支援中文欄位和英文欄位
+    const getValue = (field, fallback = '-') => {
+        return employee[field] || fallback;
+    };
+    
     // 更新切結書中的姓名
     const nameEl = document.getElementById('agreement-name');
     if (nameEl) {
-        nameEl.textContent = employee.姓名 || employee.name || '___________';
+        nameEl.textContent = getValue('姓名', '___________');
+    }
+    
+    // ✅ 處理日期格式
+    let hireDate = getValue('到職日', '-');
+    if (hireDate && hireDate !== '-') {
+        try {
+            // 如果是 Date 物件或可轉換的日期字串
+            const date = new Date(hireDate);
+            if (!isNaN(date.getTime())) {
+                hireDate = date.toLocaleDateString('zh-TW');
+            }
+        } catch (e) {
+            console.log('日期轉換失敗，使用原始值');
+        }
     }
     
     container.innerHTML = `
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="flex justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
                 <span class="text-gray-600 dark:text-gray-400">姓名</span>
-                <span class="font-semibold text-gray-800 dark:text-white">${employee.姓名 || employee.name || '-'}</span>
+                <span class="font-semibold text-gray-800 dark:text-white">${getValue('姓名')}</span>
             </div>
             <div class="flex justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
                 <span class="text-gray-600 dark:text-gray-400">身分證字號</span>
-                <span class="font-semibold text-gray-800 dark:text-white">${employee.身分證字號 || '-'}</span>
+                <span class="font-semibold text-gray-800 dark:text-white">${getValue('身分證字號')}</span>
             </div>
             <div class="flex justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
                 <span class="text-gray-600 dark:text-gray-400">職位</span>
-                <span class="font-semibold text-gray-800 dark:text-white">${employee.職位 || '-'}</span>
+                <span class="font-semibold text-gray-800 dark:text-white">${getValue('職位')}</span>
             </div>
             <div class="flex justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
                 <span class="text-gray-600 dark:text-gray-400">部門</span>
-                <span class="font-semibold text-gray-800 dark:text-white">${employee.部門 || '-'}</span>
+                <span class="font-semibold text-gray-800 dark:text-white">${getValue('部門')}</span>
             </div>
             <div class="flex justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
                 <span class="text-gray-600 dark:text-gray-400">到職日</span>
-                <span class="font-semibold text-gray-800 dark:text-white">${employee.到職日 || '-'}</span>
+                <span class="font-semibold text-gray-800 dark:text-white">${hireDate}</span>
             </div>
             <div class="flex justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
                 <span class="text-gray-600 dark:text-gray-400">聯絡電話</span>
-                <span class="font-semibold text-gray-800 dark:text-white">${employee.聯絡電話 || '-'}</span>
+                <span class="font-semibold text-gray-800 dark:text-white">${getValue('聯絡電話')}</span>
             </div>
         </div>
         
@@ -133,6 +157,12 @@ function renderEmployeeData(employee) {
             </p>
         </div>
     `;
+    
+    console.log('✅ 員工資料渲染完成:', {
+        姓名: getValue('姓名'),
+        職位: getValue('職位'),
+        部門: getValue('部門')
+    });
 }
 
 /**
