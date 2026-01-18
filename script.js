@@ -2079,10 +2079,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // UI切換邏輯
     const switchTab = (tabId) => {
         // 修改這一行，加入 'shift-view'
-        const tabs = ['dashboard-view', 'monthly-view', 'location-view', 'shift-view', 'admin-view', 'overtime-view', 'leave-view', 'salary-view', 'worklog-view', 'onboarding-view'];
+        const tabs = ['dashboard-view', 'monthly-view', 'location-view', 'shift-view', 'admin-view', 'overtime-view', 'leave-view', 'salary-view', 'worklog-view', 'onboarding-view', 'equipment-view'];
         
         // 修改這一行，加入 'tab-shift-btn'
-        const btns = ['tab-dashboard-btn', 'tab-monthly-btn', 'tab-location-btn', 'tab-shift-btn', 'tab-admin-btn', 'tab-overtime-btn', 'tab-leave-btn', 'tab-salary-btn', 'tab-worklog-btn', 'tab-onboarding-btn'];
+        const btns = ['tab-dashboard-btn', 'tab-monthly-btn', 'tab-location-btn', 'tab-shift-btn', 'tab-admin-btn', 'tab-overtime-btn', 'tab-leave-btn', 'tab-salary-btn', 'tab-worklog-btn', 'tab-onboarding-btn', 'tab-equipment-btn'];
     
         // 1. 移除舊的 active 類別和 CSS 屬性
         tabs.forEach(id => {
@@ -2141,6 +2141,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             initWorklogTab();
         } else if (tabId === 'onboarding-view') {
             initOnboardingTab();
+        } else if (tabId === 'equipment-view') {
+            initEquipmentTab();
         }
         
     };
@@ -4282,5 +4284,180 @@ async function deleteAnnouncement(id) {
     } catch (error) {
         console.error('刪除公告失敗:', error);
         showNotification('刪除失敗', 'error');
+    }
+}
+
+/**
+ * 初始化裝備領用表分頁
+ */
+async function initEquipmentTab() {
+    console.log('📦 初始化裝備領用表分頁');
+    await loadEmployeeEquipmentIssue();
+}
+
+/**
+ * 載入員工裝備領用記錄
+ */
+async function loadEmployeeEquipmentIssue() {
+    const loadingEl = document.getElementById('equipment-loading');
+    const userName = document.getElementById('user-name')?.textContent || '未知';
+    
+    document.getElementById('equipment-user-name').textContent = userName;
+    
+    try {
+        if (loadingEl) loadingEl.style.display = 'block';
+        
+        const token = localStorage.getItem('sessionToken');
+        
+        if (!token) {
+            throw new Error('未登入，請先登入');
+        }
+        
+        const res = await callApifetch(`getEmployeeEquipmentIssue&token=${token}`);
+        
+        if (loadingEl) loadingEl.style.display = 'none';
+        
+        if (res.ok) {
+            console.log('✅ API 回傳成功:', res.data);
+            
+            const data = res.data;
+            
+            // 顯示領用日期
+            if (data.hasRecord && data.issueDate) {
+                document.getElementById('equipment-issue-date').textContent = 
+                    new Date(data.issueDate).toLocaleDateString();
+            } else {
+                document.getElementById('equipment-issue-date').textContent = '尚未領用';
+            }
+            
+            // 渲染裝備清單
+            renderEquipmentList(data.equipmentList);
+            
+        } else {
+            showNotification(res.msg || '載入失敗', 'error');
+        }
+        
+    } catch (error) {
+        console.error('❌ 載入失敗:', error);
+        if (loadingEl) loadingEl.style.display = 'none';
+        showNotification('載入失敗：' + error.message, 'error');
+    }
+}
+
+/**
+ * 渲染裝備清單
+ */
+function renderEquipmentList(equipmentList) {
+    const tbody = document.getElementById('equipment-list-body');
+    
+    if (!tbody) {
+        console.error('❌ 找不到 equipment-list-body');
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    
+    equipmentList.forEach((item, index) => {
+        const row = document.createElement('tr');
+        row.className = index % 2 === 0 
+            ? 'bg-gray-50 dark:bg-gray-700' 
+            : 'bg-white dark:bg-gray-800';
+        
+        // 判斷是否為必填項目或公司提供
+        let nameDisplay = item.name;
+        if (item.name.startsWith('➤')) {
+            nameDisplay = `<strong>${item.name}</strong>`;
+        } else if (item.name.startsWith('◆')) {
+            nameDisplay = `<span class="text-blue-600 dark:text-blue-400">${item.name}</span>`;
+        }
+        
+        row.innerHTML = `
+            <td class="px-4 py-3 text-gray-800 dark:text-white">${nameDisplay}</td>
+            <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">${item.quantity}</td>
+            <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">${item.unit}</td>
+            <td class="px-4 py-3 text-center">
+                <input type="checkbox" 
+                       class="equipment-checkbox w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer"
+                       data-name="${item.name}"
+                       data-price="${item.price}"
+                       data-quantity="${item.quantity}"
+                       ${item.received ? 'checked' : ''}>
+            </td>
+            <td class="px-4 py-3 text-right font-semibold text-gray-800 dark:text-white">$${item.price}</td>
+        `;
+        
+        tbody.appendChild(row);
+    });
+    
+    // 綁定勾選事件
+    const checkboxes = tbody.querySelectorAll('.equipment-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateTotalAmount);
+    });
+    
+    // 初始化總金額
+    updateTotalAmount();
+}
+
+/**
+ * 更新總金額
+ */
+function updateTotalAmount() {
+    const checkboxes = document.querySelectorAll('.equipment-checkbox');
+    let total = 0;
+    
+    checkboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            const price = parseInt(checkbox.dataset.price);
+            const quantity = parseInt(checkbox.dataset.quantity);
+            total += price * quantity;
+        }
+    });
+    
+    document.getElementById('equipment-total-amount').textContent = `$${total}`;
+}
+
+/**
+ * 儲存裝備領用記錄
+ */
+async function saveEquipmentIssue() {
+    const saveBtn = document.getElementById('save-equipment-btn');
+    
+    try {
+        generalButtonState(saveBtn, 'processing', '儲存中...');
+        
+        const token = localStorage.getItem('sessionToken');
+        
+        if (!token) {
+            throw new Error('未登入');
+        }
+        
+        // 收集勾選的裝備
+        const checkboxes = document.querySelectorAll('.equipment-checkbox');
+        const receivedItems = {};
+        
+        checkboxes.forEach(checkbox => {
+            receivedItems[checkbox.dataset.name] = checkbox.checked;
+        });
+        
+        console.log('📦 準備儲存:', receivedItems);
+        
+        const res = await callApifetch(
+            `saveEquipmentIssue&token=${token}&receivedItems=${encodeURIComponent(JSON.stringify(receivedItems))}`
+        );
+        
+        if (res.ok) {
+            showNotification('✅ 領用記錄已成功儲存！', 'success');
+            await loadEmployeeEquipmentIssue();
+        } else {
+            showNotification(res.msg || '儲存失敗', 'error');
+        }
+        
+    } catch (error) {
+        console.error('❌ 儲存失敗:', error);
+        showNotification('儲存失敗：' + error.message, 'error');
+        
+    } finally {
+        generalButtonState(saveBtn, 'idle');
     }
 }
