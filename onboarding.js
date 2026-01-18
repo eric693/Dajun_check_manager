@@ -95,6 +95,12 @@ function renderEmployeeData(employee, signature) {
         return;
     }
     
+    // ⭐ 修改：如果沒有員工資料，初始化為空物件
+    if (!employee) {
+        console.log('⚠️ 沒有現有資料，允許新填寫');
+        employee = {}; // 空物件，讓所有欄位都是空的
+    }
+    
     // 安全取值函數
     const getValue = (field, fallback = '') => {
         return employee[field] || fallback;
@@ -103,12 +109,14 @@ function renderEmployeeData(employee, signature) {
     // 更新切結書中的姓名
     const nameEl = document.getElementById('agreement-name');
     if (nameEl) {
-        nameEl.textContent = getValue('姓名', '___________');
+        const userName = getValue('姓名');
+        nameEl.textContent = userName || '___________'; // 如果沒有名字，顯示底線
     }
     
-    // 檢查是否已提交（已提交則禁用編輯）
+    // ⭐⭐⭐ 修改：判斷是否可編輯
+    // 規則：只有在「已提交」狀態時才禁用編輯
     const isSubmitted = signature && signature.status !== 'PENDING';
-    const isEditable = !isSubmitted;
+    const isEditable = !isSubmitted; // 未提交或沒有簽核記錄 = 可編輯
     
     // ⭐⭐⭐ 根據 Google Sheets 實際欄位定義（共 30 個欄位）
     const fieldGroups = [
@@ -212,14 +220,14 @@ function renderEmployeeData(employee, signature) {
                     </label>
             `;
             
+            // ⭐⭐⭐ 關鍵修改：移除所有 readonly 和 disabled 屬性
             // 根據類型生成不同的輸入元件
             if (field.type === 'select') {
                 formHTML += `
                     <select id="${fieldId}" 
                             data-field="${field.key}"
-                            ${isEditable ? '' : 'disabled'}
                             ${field.required ? 'required' : ''}
-                            class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg ${isEditable ? '' : 'bg-gray-100 dark:bg-gray-700'} dark:text-white focus:ring-2 focus:ring-indigo-500">
+                            class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500">
                         <option value="">請選擇</option>
                 `;
                 field.options.forEach(option => {
@@ -234,10 +242,9 @@ function renderEmployeeData(employee, signature) {
                     <textarea id="${fieldId}" 
                               data-field="${field.key}"
                               rows="${rows}"
-                              ${isEditable ? '' : 'readonly'}
                               ${field.required ? 'required' : ''}
                               placeholder="${placeholder}"
-                              class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg ${isEditable ? '' : 'bg-gray-100 dark:bg-gray-700'} dark:text-white focus:ring-2 focus:ring-indigo-500 resize-none">${value}</textarea>
+                              class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500 resize-none">${value}</textarea>
                 `;
                 
             } else {
@@ -259,11 +266,10 @@ function renderEmployeeData(employee, signature) {
                            id="${fieldId}" 
                            data-field="${field.key}"
                            value="${displayValue}"
-                           ${isEditable ? '' : 'readonly'}
                            ${field.required ? 'required' : ''}
                            ${field.maxlength ? `maxlength="${field.maxlength}"` : ''}
                            ${placeholder ? `placeholder="${placeholder}"` : ''}
-                           class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg ${isEditable ? '' : 'bg-gray-100 dark:bg-gray-700'} dark:text-white focus:ring-2 focus:ring-indigo-500">
+                           class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500">
                 `;
             }
             
@@ -276,7 +282,7 @@ function renderEmployeeData(employee, signature) {
         `;
     });
     
-    // 按鈕
+    // ⭐⭐⭐ 修改：只在已提交後顯示「無法修改」提示
     if (isEditable) {
         formHTML += `
             <div class="flex space-x-3 pt-2">
