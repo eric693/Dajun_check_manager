@@ -1,10 +1,18 @@
-// onboarding.js - 入職切結書前端邏輯
+// onboarding.js - 入職切結書前端邏輯（修正版）
 
 /**
  * 初始化入職切結書分頁
  */
 async function initOnboardingTab() {
     console.log('📋 初始化入職切結書分頁');
+    
+    // ✅ 確保 DOM 元素存在
+    const employeeDataContainer = document.getElementById('employee-data-container');
+    if (!employeeDataContainer) {
+        console.error('❌ 找不到 employee-data-container 元素');
+        showNotification('介面載入失敗，請重新整理頁面', 'error');
+        return;
+    }
     
     // 載入員工資料
     await loadEmployeeOnboardingData();
@@ -20,13 +28,23 @@ async function loadEmployeeOnboardingData() {
     const loadingEl = document.getElementById('employee-data-loading');
     const containerEl = document.getElementById('employee-data-container');
     
+    if (!containerEl) {
+        console.error('❌ employee-data-container 不存在');
+        return;
+    }
+    
     try {
-        loadingEl.style.display = 'block';
+        if (loadingEl) loadingEl.style.display = 'block';
         
         const token = localStorage.getItem('sessionToken');
+        
+        if (!token) {
+            throw new Error('未登入，請先登入');
+        }
+        
         const res = await callApifetch(`getEmployeeOnboardingData&token=${token}`);
         
-        loadingEl.style.display = 'none';
+        if (loadingEl) loadingEl.style.display = 'none';
         
         if (res.ok && res.data) {
             renderEmployeeData(res.data.employee);
@@ -42,16 +60,25 @@ async function loadEmployeeOnboardingData() {
             }
         } else {
             containerEl.innerHTML = `
-                <div class="text-center py-4 text-red-600">
-                    ${res.msg || '無法載入資料'}
+                <div class="text-center py-4 text-red-600 dark:text-red-400">
+                    ❌ ${res.msg || '無法載入資料，請稍後再試'}
                 </div>
             `;
         }
         
     } catch (error) {
-        console.error('載入失敗:', error);
-        loadingEl.style.display = 'none';
-        showNotification('載入失敗', 'error');
+        console.error('❌ 載入失敗:', error);
+        if (loadingEl) loadingEl.style.display = 'none';
+        
+        if (containerEl) {
+            containerEl.innerHTML = `
+                <div class="text-center py-4 text-red-600 dark:text-red-400">
+                    ❌ ${error.message || '載入失敗'}
+                </div>
+            `;
+        }
+        
+        showNotification('載入失敗：' + error.message, 'error');
     }
 }
 
@@ -60,6 +87,11 @@ async function loadEmployeeOnboardingData() {
  */
 function renderEmployeeData(employee) {
     const container = document.getElementById('employee-data-container');
+    
+    if (!container) {
+        console.error('❌ employee-data-container 不存在');
+        return;
+    }
     
     // 更新切結書中的姓名
     const nameEl = document.getElementById('agreement-name');
@@ -71,7 +103,7 @@ function renderEmployeeData(employee) {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="flex justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
                 <span class="text-gray-600 dark:text-gray-400">姓名</span>
-                <span class="font-semibold text-gray-800 dark:text-white">${employee.姓名 || '-'}</span>
+                <span class="font-semibold text-gray-800 dark:text-white">${employee.姓名 || employee.name || '-'}</span>
             </div>
             <div class="flex justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
                 <span class="text-gray-600 dark:text-gray-400">身分證字號</span>
@@ -109,6 +141,11 @@ function renderEmployeeData(employee) {
 function renderSignatureStatus(signature) {
     const statusCard = document.getElementById('onboarding-status-card');
     const statusContent = document.getElementById('onboarding-status-content');
+    
+    if (!statusCard || !statusContent) {
+        console.error('❌ 簽核狀態元素不存在');
+        return;
+    }
     
     let statusHtml = '';
     let statusClass = '';
@@ -179,6 +216,11 @@ function setupAgreementCheckboxes() {
     
     const submitBtn = document.getElementById('submit-onboarding-btn');
     
+    if (!submitBtn) {
+        console.error('❌ 提交按鈕不存在');
+        return;
+    }
+    
     // 監聽所有勾選框
     checkboxes.forEach(id => {
         const checkbox = document.getElementById(id);
@@ -201,9 +243,7 @@ function setupAgreementCheckboxes() {
     }
     
     // 綁定提交按鈕
-    if (submitBtn) {
-        submitBtn.addEventListener('click', submitOnboardingAgreement);
-    }
+    submitBtn.addEventListener('click', submitOnboardingAgreement);
 }
 
 /**
@@ -217,9 +257,15 @@ async function submitOnboardingAgreement() {
     }
     
     try {
-        generalButtonState(submitBtn, 'processing', '提交中...');
+        if (submitBtn) {
+            generalButtonState(submitBtn, 'processing', '提交中...');
+        }
         
         const token = localStorage.getItem('sessionToken');
+        
+        if (!token) {
+            throw new Error('未登入，請先登入');
+        }
         
         // 取得 IP (可選)
         let ipAddress = 'Unknown';
@@ -248,11 +294,13 @@ async function submitOnboardingAgreement() {
         }
         
     } catch (error) {
-        console.error('提交失敗:', error);
-        showNotification('提交失敗', 'error');
+        console.error('❌ 提交失敗:', error);
+        showNotification('提交失敗：' + error.message, 'error');
         
     } finally {
-        generalButtonState(submitBtn, 'idle');
+        if (submitBtn) {
+            generalButtonState(submitBtn, 'idle');
+        }
     }
 }
 
@@ -302,7 +350,7 @@ async function loadPendingOnboardingRequests() {
         }
         
     } catch (error) {
-        console.error('載入失敗:', error);
+        console.error('❌ 載入失敗:', error);
         if (loadingEl) loadingEl.style.display = 'none';
     }
 }
@@ -381,7 +429,7 @@ async function reviewOnboarding(rowId, action) {
         }
         
     } catch (error) {
-        console.error('審核失敗:', error);
+        console.error('❌ 審核失敗:', error);
         showNotification('操作失敗', 'error');
     }
 }
