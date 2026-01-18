@@ -1,4 +1,4 @@
-// onboarding.js - 入職切結書前端邏輯（修正版 v2）
+// onboarding.js - 入職切結書前端邏輯（完整版 - 支援 30 個欄位）
 
 /**
  * 初始化入職切結書分頁
@@ -47,8 +47,6 @@ async function loadEmployeeOnboardingData() {
         
         if (res.ok && res.data) {
             console.log('✅ API 回傳成功:', res.data);
-            console.log('   員工資料:', res.data.employee);
-            console.log('   簽核狀態:', res.data.signature);
             
             renderEmployeeData(res.data.employee, res.data.signature);
             
@@ -87,7 +85,7 @@ async function loadEmployeeOnboardingData() {
 }
 
 /**
- * 渲染員工資料（加入編輯功能）
+ * ⭐⭐⭐ 動態渲染員工資料（支援所有 30 個欄位）
  */
 function renderEmployeeData(employee, signature) {
     const container = document.getElementById('employee-data-container');
@@ -108,161 +106,260 @@ function renderEmployeeData(employee, signature) {
         nameEl.textContent = getValue('姓名', '___________');
     }
     
-    // 處理日期格式
-    let hireDate = getValue('到職日', '');
-    if (hireDate && hireDate !== '') {
-        try {
-            const date = new Date(hireDate);
-            if (!isNaN(date.getTime())) {
-                // 轉換為 YYYY-MM-DD 格式（input type="date" 需要）
-                hireDate = date.toISOString().split('T')[0];
-            }
-        } catch (e) {
-            console.log('日期轉換失敗，使用原始值');
-        }
-    }
-    
     // 檢查是否已提交（已提交則禁用編輯）
     const isSubmitted = signature && signature.status !== 'PENDING';
     const isEditable = !isSubmitted;
     
-    container.innerHTML = `
-        <form id="employee-data-form" class="space-y-4">
-            <!-- 姓名 -->
-            <div>
-                <label for="input-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    姓名 <span class="text-red-500">*</span>
-                </label>
-                <input type="text" 
-                       id="input-name" 
-                       value="${getValue('姓名')}"
-                       ${isEditable ? '' : 'readonly'}
-                       class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg ${isEditable ? '' : 'bg-gray-100 dark:bg-gray-700'} dark:text-white focus:ring-2 focus:ring-indigo-500">
-            </div>
-            
-            <!-- 身分證字號 -->
-            <div>
-                <label for="input-id-number" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    身分證字號 <span class="text-red-500">*</span>
-                </label>
-                <input type="text" 
-                       id="input-id-number" 
-                       value="${getValue('身分證字號')}"
-                       ${isEditable ? '' : 'readonly'}
-                       maxlength="10"
-                       class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg ${isEditable ? '' : 'bg-gray-100 dark:bg-gray-700'} dark:text-white focus:ring-2 focus:ring-indigo-500">
-            </div>
-            
-            <div class="grid grid-cols-2 gap-4">
-                <!-- 職位 -->
-                <div>
-                    <label for="input-position" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        職位 <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" 
-                           id="input-position" 
-                           value="${getValue('職位')}"
-                           ${isEditable ? '' : 'readonly'}
-                           class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg ${isEditable ? '' : 'bg-gray-100 dark:bg-gray-700'} dark:text-white focus:ring-2 focus:ring-indigo-500">
-                </div>
-                
-                <!-- 部門 -->
-                <div>
-                    <label for="input-department" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        部門 <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" 
-                           id="input-department" 
-                           value="${getValue('部門')}"
-                           ${isEditable ? '' : 'readonly'}
-                           class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg ${isEditable ? '' : 'bg-gray-100 dark:bg-gray-700'} dark:text-white focus:ring-2 focus:ring-indigo-500">
-                </div>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-4">
-                <!-- 到職日 -->
-                <div>
-                    <label for="input-hire-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        到職日 <span class="text-red-500">*</span>
-                    </label>
-                    <input type="date" 
-                           id="input-hire-date" 
-                           value="${hireDate}"
-                           ${isEditable ? '' : 'readonly'}
-                           class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg ${isEditable ? '' : 'bg-gray-100 dark:bg-gray-700'} dark:text-white focus:ring-2 focus:ring-indigo-500">
-                </div>
-                
-                <!-- 聯絡電話 -->
-                <div>
-                    <label for="input-phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        聯絡電話 <span class="text-red-500">*</span>
-                    </label>
-                    <input type="tel" 
-                           id="input-phone" 
-                           value="${getValue('聯絡電話')}"
-                           ${isEditable ? '' : 'readonly'}
-                           class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg ${isEditable ? '' : 'bg-gray-100 dark:bg-gray-700'} dark:text-white focus:ring-2 focus:ring-indigo-500">
-                </div>
-            </div>
-            
-            ${isEditable ? `
-                <div class="flex space-x-3 pt-2">
-                    <button type="button" 
-                            onclick="saveEmployeeData()"
-                            class="flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors">
-                        💾 儲存資料
-                    </button>
-                    <button type="button" 
-                            onclick="loadEmployeeOnboardingData()"
-                            class="px-4 py-3 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg font-semibold transition-colors">
-                        ↻ 重新載入
-                    </button>
-                </div>
-            ` : `
-                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
-                    <p class="text-sm text-blue-800 dark:text-blue-300">
-                        ℹ️ 已提交簽核，資料無法修改
-                    </p>
-                </div>
-            `}
-        </form>
+    // ⭐⭐⭐ 根據 Google Sheets 實際欄位定義（共 30 個欄位）
+    const fieldGroups = [
+        {
+            title: '基本資料',
+            fields: [
+                { key: '姓名', label: '姓名', type: 'text', required: true },
+                { key: '出生日期', label: '出生日期', type: 'date', required: true },
+                { key: '部門', label: '部門', type: 'text', required: true },
+                { key: '性別', label: '性別', type: 'select', required: true, options: ['男', '女'] },
+                { key: '身分證字號', label: '身分證字號', type: 'text', required: true, maxlength: 10 },
+                { key: '血型', label: '血型', type: 'select', required: false, options: ['A', 'B', 'O', 'AB', '不清楚'] }
+            ]
+        },
+        {
+            title: '聯絡資訊',
+            fields: [
+                { key: '通訊地址', label: '通訊地址', type: 'text', required: false, width: 'full' },
+                { key: '戶籍地址', label: '戶籍地址', type: 'text', required: false, width: 'full' },
+                { key: '聯絡電話', label: '聯絡電話', type: 'tel', required: true },
+                { key: '行動電話', label: '行動電話', type: 'tel', required: false },
+                { key: 'E-mail', label: 'E-mail', type: 'email', required: false },
+                { key: '籍貫', label: '籍貫', type: 'text', required: false }
+            ]
+        },
+        {
+            title: '緊急聯絡人',
+            fields: [
+                { key: '緊急連絡人', label: '緊急聯絡人姓名', type: 'text', required: true },
+                { key: '緊急連絡電話', label: '緊急聯絡人電話', type: 'tel', required: true },
+                { key: '緊急連絡人關係', label: '與本人關係', type: 'select', required: false, options: ['父母', '配偶', '子女', '兄弟姐妹', '其他親屬', '朋友'] }
+            ]
+        },
+        {
+            title: '學歷資訊',
+            fields: [
+                { key: '最高學歷', label: '最高學歷', type: 'select', required: false, options: ['國中', '高中職', '專科', '大學', '碩士', '博士'] },
+                { key: '學校', label: '畢業學校', type: 'text', required: false }
+            ]
+        },
+        {
+            title: '保險資訊',
+            fields: [
+                { key: '勞保單位', label: '勞保投保單位', type: 'text', required: false },
+                { key: '勞保投保日期', label: '勞保投保日期', type: 'date', required: false },
+                { key: '健保單位', label: '健保投保單位', type: 'text', required: false },
+                { key: '健保投保日期', label: '健保投保日期', type: 'date', required: false }
+            ]
+        },
+        {
+            title: '職務資訊',
+            fields: [
+                { key: '職位', label: '職位', type: 'text', required: false },
+                { key: '到職日', label: '到職日', type: 'date', required: false },
+                { key: '離職日', label: '離職日', type: 'date', required: false }
+            ]
+        },
+        {
+            title: '學經歷與證照',
+            fields: [
+                { key: '相關學經歷或證照', label: '相關學經歷或證照', type: 'textarea', required: false, rows: 4, width: 'full', placeholder: '請詳細填寫您的相關學經歷或證照...' }
+            ]
+        },
+        {
+            title: '其他資訊',
+            fields: [
+                { key: '其他應記載事項', label: '其他應記載事項', type: 'textarea', required: false, rows: 3, width: 'full', placeholder: '如有其他需要說明的事項，請在此填寫...' },
+                { key: '備註', label: '備註', type: 'textarea', required: false, rows: 2, width: 'full', placeholder: '管理員備註...' }
+            ]
+        },
+        {
+            title: '匯款資訊',
+            fields: [
+                { key: '銀行', label: '銀行名稱', type: 'text', required: false },
+                { key: '匯款帳號', label: '匯款帳號', type: 'text', required: false, placeholder: '請填寫完整帳號' }
+            ]
+        }
+    ];
+    
+    // 生成表單 HTML
+    let formHTML = '<form id="employee-data-form" class="space-y-6">';
+    
+    fieldGroups.forEach(group => {
+        formHTML += `
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">${group.title}</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        `;
         
-        ${!isSubmitted ? `
+        group.fields.forEach(field => {
+            const value = getValue(field.key);
+            const fieldId = `input-${field.key.replace(/\s+/g, '-')}`;
+            const requiredMark = field.required ? '<span class="text-red-500">*</span>' : '';
+            const isFullWidth = field.width === 'full';
+            const placeholder = field.placeholder || '';
+            
+            formHTML += `
+                <div class="${isFullWidth ? 'md:col-span-2' : ''}">
+                    <label for="${fieldId}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        ${field.label} ${requiredMark}
+                    </label>
+            `;
+            
+            // 根據類型生成不同的輸入元件
+            if (field.type === 'select') {
+                formHTML += `
+                    <select id="${fieldId}" 
+                            data-field="${field.key}"
+                            ${isEditable ? '' : 'disabled'}
+                            ${field.required ? 'required' : ''}
+                            class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg ${isEditable ? '' : 'bg-gray-100 dark:bg-gray-700'} dark:text-white focus:ring-2 focus:ring-indigo-500">
+                        <option value="">請選擇</option>
+                `;
+                field.options.forEach(option => {
+                    const selected = value === option ? 'selected' : '';
+                    formHTML += `<option value="${option}" ${selected}>${option}</option>`;
+                });
+                formHTML += `</select>`;
+                
+            } else if (field.type === 'textarea') {
+                const rows = field.rows || 3;
+                formHTML += `
+                    <textarea id="${fieldId}" 
+                              data-field="${field.key}"
+                              rows="${rows}"
+                              ${isEditable ? '' : 'readonly'}
+                              ${field.required ? 'required' : ''}
+                              placeholder="${placeholder}"
+                              class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg ${isEditable ? '' : 'bg-gray-100 dark:bg-gray-700'} dark:text-white focus:ring-2 focus:ring-indigo-500 resize-none">${value}</textarea>
+                `;
+                
+            } else {
+                // 處理日期格式
+                let displayValue = value;
+                if (field.type === 'date' && value && value !== '') {
+                    try {
+                        const date = new Date(value);
+                        if (!isNaN(date.getTime())) {
+                            displayValue = date.toISOString().split('T')[0];
+                        }
+                    } catch (e) {
+                        console.log('日期轉換失敗，使用原始值');
+                    }
+                }
+                
+                formHTML += `
+                    <input type="${field.type}" 
+                           id="${fieldId}" 
+                           data-field="${field.key}"
+                           value="${displayValue}"
+                           ${isEditable ? '' : 'readonly'}
+                           ${field.required ? 'required' : ''}
+                           ${field.maxlength ? `maxlength="${field.maxlength}"` : ''}
+                           ${placeholder ? `placeholder="${placeholder}"` : ''}
+                           class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg ${isEditable ? '' : 'bg-gray-100 dark:bg-gray-700'} dark:text-white focus:ring-2 focus:ring-indigo-500">
+                `;
+            }
+            
+            formHTML += `</div>`;
+        });
+        
+        formHTML += `
+                </div>
+            </div>
+        `;
+    });
+    
+    // 按鈕
+    if (isEditable) {
+        formHTML += `
+            <div class="flex space-x-3 pt-2">
+                <button type="button" 
+                        onclick="saveEmployeeData()"
+                        class="flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors">
+                    💾 儲存資料
+                </button>
+                <button type="button" 
+                        onclick="loadEmployeeOnboardingData()"
+                        class="px-4 py-3 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg font-semibold transition-colors">
+                    ↻ 重新載入
+                </button>
+            </div>
+        `;
+    } else {
+        formHTML += `
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
+                <p class="text-sm text-blue-800 dark:text-blue-300">
+                    ℹ️ 已提交簽核，資料無法修改
+                </p>
+            </div>
+        `;
+    }
+    
+    formHTML += '</form>';
+    
+    if (!isSubmitted) {
+        formHTML += `
             <div class="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
                 <p class="text-sm text-yellow-800 dark:text-yellow-300">
                     ⚠️ 請確認資料無誤後再提交切結書，提交後將無法修改
                 </p>
             </div>
-        ` : ''}
-    `;
+        `;
+    }
     
+    container.innerHTML = formHTML;
     console.log('✅ 員工資料渲染完成');
 }
 
 /**
- * 儲存員工資料
+ * ⭐⭐⭐ 儲存員工資料（支援所有欄位）
  */
 async function saveEmployeeData() {
     try {
-        // 取得表單資料
-        const name = document.getElementById('input-name').value.trim();
-        const idNumber = document.getElementById('input-id-number').value.trim();
-        const position = document.getElementById('input-position').value.trim();
-        const department = document.getElementById('input-department').value.trim();
-        const hireDate = document.getElementById('input-hire-date').value;
-        const phone = document.getElementById('input-phone').value.trim();
+        // 收集所有欄位的值
+        const form = document.getElementById('employee-data-form');
+        const inputs = form.querySelectorAll('input[data-field], select[data-field], textarea[data-field]');
         
-        // 驗證必填欄位
-        if (!name || !idNumber || !position || !department || !hireDate || !phone) {
-            showNotification('❌ 請填寫所有必填欄位', 'error');
+        const updateData = {};
+        let hasRequiredEmpty = false;
+        let emptyFields = [];
+        
+        inputs.forEach(input => {
+            const fieldName = input.getAttribute('data-field');
+            const value = input.value.trim();
+            
+            // 檢查必填欄位
+            if (input.hasAttribute('required') && !value) {
+                hasRequiredEmpty = true;
+                const label = input.previousElementSibling;
+                if (label) {
+                    emptyFields.push(label.textContent.replace('*', '').trim());
+                }
+            }
+            
+            updateData[fieldName] = value;
+        });
+        
+        if (hasRequiredEmpty) {
+            showNotification('❌ 請填寫所有必填欄位：\n' + emptyFields.join('、'), 'error');
             return;
         }
         
-        // 驗證身分證格式（台灣）
-        const idRegex = /^[A-Z][12]\d{8}$/;
-        if (!idRegex.test(idNumber)) {
-            showNotification('❌ 身分證字號格式不正確', 'error');
-            return;
+        // 特殊驗證：身分證格式
+        const idNumber = updateData['身分證字號'];
+        if (idNumber) {
+            const idRegex = /^[A-Z][12]\d{8}$/;
+            if (!idRegex.test(idNumber)) {
+                showNotification('❌ 身分證字號格式不正確', 'error');
+                return;
+            }
         }
         
         const token = localStorage.getItem('sessionToken');
@@ -273,15 +370,16 @@ async function saveEmployeeData() {
         
         showNotification('儲存中...', 'info');
         
-        const res = await callApifetch(
-            `updateEmployeeOnboardingData&token=${token}` +
-            `&name=${encodeURIComponent(name)}` +
-            `&idNumber=${encodeURIComponent(idNumber)}` +
-            `&position=${encodeURIComponent(position)}` +
-            `&department=${encodeURIComponent(department)}` +
-            `&hireDate=${encodeURIComponent(hireDate)}` +
-            `&phone=${encodeURIComponent(phone)}`
-        );
+        // 將所有欄位轉換為 URL 參數
+        let params = `updateEmployeeOnboardingData&token=${token}`;
+        
+        for (const [key, value] of Object.entries(updateData)) {
+            if (value) {
+                params += `&${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+            }
+        }
+        
+        const res = await callApifetch(params);
         
         if (res.ok) {
             showNotification('✅ 資料已成功儲存', 'success');
