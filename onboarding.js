@@ -13,12 +13,6 @@ async function initOnboardingTab() {
         return;
     }
     
-    // 只做一次：事件綁定等初始化
-    if (!onboardingInited) {
-        onboardingInited = true;
-        setupAgreementCheckboxes();   // 只綁一次
-    }
-
     // 載入員工資料
     await loadEmployeeOnboardingData();
     
