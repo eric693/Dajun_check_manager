@@ -18,7 +18,7 @@ async function initOnboardingTab() {
         onboardingInited = true;
         setupAgreementCheckboxes();   // 只綁一次
     }
-    
+
     // 載入員工資料
     await loadEmployeeOnboardingData();
     
@@ -361,9 +361,6 @@ function renderEmployeeData(employee, signature) {
     console.log('✅ 員工資料渲染完成');
 }
 
-/**
- * ⭐⭐⭐ 儲存員工資料（支援所有欄位）
- */
 async function saveEmployeeData() {
     try {
         // 收集所有欄位的值
@@ -413,8 +410,8 @@ async function saveEmployeeData() {
         
         showNotification('儲存中...', 'info');
         
-        // 將所有欄位轉換為 URL 參數
-        let params = `updateEmployeeOnboardingData&token=${token}`;
+        // ⭐⭐⭐ 修正：確保 action 參數在最前面
+        let params = `action=updateEmployeeOnboardingData&token=${token}`;
         
         for (const [key, value] of Object.entries(updateData)) {
             if (value) {
@@ -422,6 +419,7 @@ async function saveEmployeeData() {
             }
         }
         
+        // ⭐⭐⭐ 修正：使用完整的 URL
         const res = await callApifetch(params);
         
         if (res.ok) {
