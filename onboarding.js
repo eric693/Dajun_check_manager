@@ -672,7 +672,6 @@ function renderOnboardingRequests(requests) {
                     </p>
                     <div class="space-y-1 text-sm text-gray-600 dark:text-gray-400">
                         <p>${req.position} | 🏢 ${req.department}</p>
-                        <p>${req.idNumber}</p>
                         <p>提交時間：${new Date(req.submittedAt).toLocaleString()}</p>
                         ${req.note ? `<p>📝 備註：${req.note}</p>` : ''}
                     </div>
