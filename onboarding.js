@@ -1,4 +1,4 @@
-// onboarding.js - 入職切結書前端邏輯（修正版）
+// onboarding.js - 入職切結書前端邏輯（修正版 v2）
 
 /**
  * 初始化入職切結書分頁
@@ -6,7 +6,6 @@
 async function initOnboardingTab() {
     console.log('📋 初始化入職切結書分頁');
     
-    // ✅ 確保 DOM 元素存在
     const employeeDataContainer = document.getElementById('employee-data-container');
     if (!employeeDataContainer) {
         console.error('❌ 找不到 employee-data-container 元素');
@@ -51,7 +50,7 @@ async function loadEmployeeOnboardingData() {
             console.log('   員工資料:', res.data.employee);
             console.log('   簽核狀態:', res.data.signature);
             
-            renderEmployeeData(res.data.employee);
+            renderEmployeeData(res.data.employee, res.data.signature);
             
             // 如果已簽核，顯示狀態
             if (res.data.signature) {
@@ -88,9 +87,9 @@ async function loadEmployeeOnboardingData() {
 }
 
 /**
- * 渲染員工資料
+ * 渲染員工資料（加入編輯功能）
  */
-function renderEmployeeData(employee) {
+function renderEmployeeData(employee, signature) {
     const container = document.getElementById('employee-data-container');
     
     if (!container) {
@@ -98,8 +97,8 @@ function renderEmployeeData(employee) {
         return;
     }
     
-    // ✅ 安全取值函數：支援中文欄位和英文欄位
-    const getValue = (field, fallback = '-') => {
+    // 安全取值函數
+    const getValue = (field, fallback = '') => {
         return employee[field] || fallback;
     };
     
@@ -109,60 +108,192 @@ function renderEmployeeData(employee) {
         nameEl.textContent = getValue('姓名', '___________');
     }
     
-    // ✅ 處理日期格式
-    let hireDate = getValue('到職日', '-');
-    if (hireDate && hireDate !== '-') {
+    // 處理日期格式
+    let hireDate = getValue('到職日', '');
+    if (hireDate && hireDate !== '') {
         try {
-            // 如果是 Date 物件或可轉換的日期字串
             const date = new Date(hireDate);
             if (!isNaN(date.getTime())) {
-                hireDate = date.toLocaleDateString('zh-TW');
+                // 轉換為 YYYY-MM-DD 格式（input type="date" 需要）
+                hireDate = date.toISOString().split('T')[0];
             }
         } catch (e) {
             console.log('日期轉換失敗，使用原始值');
         }
     }
     
+    // 檢查是否已提交（已提交則禁用編輯）
+    const isSubmitted = signature && signature.status !== 'PENDING';
+    const isEditable = !isSubmitted;
+    
     container.innerHTML = `
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="flex justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                <span class="text-gray-600 dark:text-gray-400">姓名</span>
-                <span class="font-semibold text-gray-800 dark:text-white">${getValue('姓名')}</span>
+        <form id="employee-data-form" class="space-y-4">
+            <!-- 姓名 -->
+            <div>
+                <label for="input-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    姓名 <span class="text-red-500">*</span>
+                </label>
+                <input type="text" 
+                       id="input-name" 
+                       value="${getValue('姓名')}"
+                       ${isEditable ? '' : 'readonly'}
+                       class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg ${isEditable ? '' : 'bg-gray-100 dark:bg-gray-700'} dark:text-white focus:ring-2 focus:ring-indigo-500">
             </div>
-            <div class="flex justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                <span class="text-gray-600 dark:text-gray-400">身分證字號</span>
-                <span class="font-semibold text-gray-800 dark:text-white">${getValue('身分證字號')}</span>
+            
+            <!-- 身分證字號 -->
+            <div>
+                <label for="input-id-number" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    身分證字號 <span class="text-red-500">*</span>
+                </label>
+                <input type="text" 
+                       id="input-id-number" 
+                       value="${getValue('身分證字號')}"
+                       ${isEditable ? '' : 'readonly'}
+                       maxlength="10"
+                       class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg ${isEditable ? '' : 'bg-gray-100 dark:bg-gray-700'} dark:text-white focus:ring-2 focus:ring-indigo-500">
             </div>
-            <div class="flex justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                <span class="text-gray-600 dark:text-gray-400">職位</span>
-                <span class="font-semibold text-gray-800 dark:text-white">${getValue('職位')}</span>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <!-- 職位 -->
+                <div>
+                    <label for="input-position" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        職位 <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" 
+                           id="input-position" 
+                           value="${getValue('職位')}"
+                           ${isEditable ? '' : 'readonly'}
+                           class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg ${isEditable ? '' : 'bg-gray-100 dark:bg-gray-700'} dark:text-white focus:ring-2 focus:ring-indigo-500">
+                </div>
+                
+                <!-- 部門 -->
+                <div>
+                    <label for="input-department" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        部門 <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" 
+                           id="input-department" 
+                           value="${getValue('部門')}"
+                           ${isEditable ? '' : 'readonly'}
+                           class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg ${isEditable ? '' : 'bg-gray-100 dark:bg-gray-700'} dark:text-white focus:ring-2 focus:ring-indigo-500">
+                </div>
             </div>
-            <div class="flex justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                <span class="text-gray-600 dark:text-gray-400">部門</span>
-                <span class="font-semibold text-gray-800 dark:text-white">${getValue('部門')}</span>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <!-- 到職日 -->
+                <div>
+                    <label for="input-hire-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        到職日 <span class="text-red-500">*</span>
+                    </label>
+                    <input type="date" 
+                           id="input-hire-date" 
+                           value="${hireDate}"
+                           ${isEditable ? '' : 'readonly'}
+                           class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg ${isEditable ? '' : 'bg-gray-100 dark:bg-gray-700'} dark:text-white focus:ring-2 focus:ring-indigo-500">
+                </div>
+                
+                <!-- 聯絡電話 -->
+                <div>
+                    <label for="input-phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        聯絡電話 <span class="text-red-500">*</span>
+                    </label>
+                    <input type="tel" 
+                           id="input-phone" 
+                           value="${getValue('聯絡電話')}"
+                           ${isEditable ? '' : 'readonly'}
+                           class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg ${isEditable ? '' : 'bg-gray-100 dark:bg-gray-700'} dark:text-white focus:ring-2 focus:ring-indigo-500">
+                </div>
             </div>
-            <div class="flex justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                <span class="text-gray-600 dark:text-gray-400">到職日</span>
-                <span class="font-semibold text-gray-800 dark:text-white">${hireDate}</span>
-            </div>
-            <div class="flex justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                <span class="text-gray-600 dark:text-gray-400">聯絡電話</span>
-                <span class="font-semibold text-gray-800 dark:text-white">${getValue('聯絡電話')}</span>
-            </div>
-        </div>
+            
+            ${isEditable ? `
+                <div class="flex space-x-3 pt-2">
+                    <button type="button" 
+                            onclick="saveEmployeeData()"
+                            class="flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors">
+                        💾 儲存資料
+                    </button>
+                    <button type="button" 
+                            onclick="loadEmployeeOnboardingData()"
+                            class="px-4 py-3 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg font-semibold transition-colors">
+                        ↻ 重新載入
+                    </button>
+                </div>
+            ` : `
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
+                    <p class="text-sm text-blue-800 dark:text-blue-300">
+                        ℹ️ 已提交簽核，資料無法修改
+                    </p>
+                </div>
+            `}
+        </form>
         
-        <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
-            <p class="text-sm text-blue-800 dark:text-blue-300">
-                ℹ️ 如資料有誤，請聯絡人資部門進行更正
-            </p>
-        </div>
+        ${!isSubmitted ? `
+            <div class="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                <p class="text-sm text-yellow-800 dark:text-yellow-300">
+                    ⚠️ 請確認資料無誤後再提交切結書，提交後將無法修改
+                </p>
+            </div>
+        ` : ''}
     `;
     
-    console.log('✅ 員工資料渲染完成:', {
-        姓名: getValue('姓名'),
-        職位: getValue('職位'),
-        部門: getValue('部門')
-    });
+    console.log('✅ 員工資料渲染完成');
+}
+
+/**
+ * 儲存員工資料
+ */
+async function saveEmployeeData() {
+    try {
+        // 取得表單資料
+        const name = document.getElementById('input-name').value.trim();
+        const idNumber = document.getElementById('input-id-number').value.trim();
+        const position = document.getElementById('input-position').value.trim();
+        const department = document.getElementById('input-department').value.trim();
+        const hireDate = document.getElementById('input-hire-date').value;
+        const phone = document.getElementById('input-phone').value.trim();
+        
+        // 驗證必填欄位
+        if (!name || !idNumber || !position || !department || !hireDate || !phone) {
+            showNotification('❌ 請填寫所有必填欄位', 'error');
+            return;
+        }
+        
+        // 驗證身分證格式（台灣）
+        const idRegex = /^[A-Z][12]\d{8}$/;
+        if (!idRegex.test(idNumber)) {
+            showNotification('❌ 身分證字號格式不正確', 'error');
+            return;
+        }
+        
+        const token = localStorage.getItem('sessionToken');
+        
+        if (!token) {
+            throw new Error('未登入');
+        }
+        
+        showNotification('儲存中...', 'info');
+        
+        const res = await callApifetch(
+            `updateEmployeeOnboardingData&token=${token}` +
+            `&name=${encodeURIComponent(name)}` +
+            `&idNumber=${encodeURIComponent(idNumber)}` +
+            `&position=${encodeURIComponent(position)}` +
+            `&department=${encodeURIComponent(department)}` +
+            `&hireDate=${encodeURIComponent(hireDate)}` +
+            `&phone=${encodeURIComponent(phone)}`
+        );
+        
+        if (res.ok) {
+            showNotification('✅ 資料已成功儲存', 'success');
+            await loadEmployeeOnboardingData(); // 重新載入
+        } else {
+            showNotification(res.msg || '儲存失敗', 'error');
+        }
+        
+    } catch (error) {
+        console.error('❌ 儲存失敗:', error);
+        showNotification('儲存失敗：' + error.message, 'error');
+    }
 }
 
 /**
@@ -396,29 +527,29 @@ function renderOnboardingRequests(requests) {
     
     requests.forEach(req => {
         const li = document.createElement('li');
-        li.className = 'p-4 bg-gray-50 dark:bg-gray-700 rounded-lg';
+        li.className = 'p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600';
         
         li.innerHTML = `
             <div class="flex justify-between items-start">
                 <div class="flex-1">
-                    <p class="font-semibold text-gray-800 dark:text-white">
+                    <p class="font-semibold text-gray-800 dark:text-white text-lg mb-1">
                         ${req.name}
                     </p>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">
-                        ${req.position} | ${req.department}
-                    </p>
-                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                        提交時間：${new Date(req.submittedAt).toLocaleString()}
-                    </p>
-                    ${req.note ? `<p class="text-xs text-gray-500 mt-1">備註：${req.note}</p>` : ''}
+                    <div class="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+                        <p>👔 ${req.position} | 🏢 ${req.department}</p>
+                        <p>🆔 ${req.idNumber}</p>
+                        <p>📅 提交時間：${new Date(req.submittedAt).toLocaleString()}</p>
+                        <p>🌐 IP：${req.ipAddress}</p>
+                        ${req.note ? `<p>📝 備註：${req.note}</p>` : ''}
+                    </div>
                 </div>
-                <div class="flex space-x-2 ml-4">
+                <div class="flex flex-col space-y-2 ml-4">
                     <button onclick="reviewOnboarding(${req.id}, 'approve')"
-                            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold">
+                            class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-md">
                         ✓ 核准
                     </button>
                     <button onclick="reviewOnboarding(${req.id}, 'reject')"
-                            class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold">
+                            class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-md">
                         ✗ 拒絕
                     </button>
                 </div>
@@ -433,6 +564,12 @@ function renderOnboardingRequests(requests) {
  * 審核入職簽核
  */
 async function reviewOnboarding(rowId, action) {
+    console.log('═══════════════════════════════════════');
+    console.log('📋 開始審核入職簽核');
+    console.log('   rowId:', rowId);
+    console.log('   action:', action);
+    console.log('═══════════════════════════════════════');
+    
     const actionText = action === 'approve' ? '核准' : '拒絕';
     
     let comment = '';
@@ -447,9 +584,18 @@ async function reviewOnboarding(rowId, action) {
     
     try {
         const token = localStorage.getItem('sessionToken');
+        
+        console.log('📤 準備發送請求...');
+        console.log('   token:', token ? '已設定' : '未設定');
+        console.log('   rowId:', rowId);
+        console.log('   action:', action);
+        console.log('   comment:', comment);
+        
         const res = await callApifetch(
             `reviewOnboarding&token=${token}&rowId=${rowId}&action=${action}&comment=${encodeURIComponent(comment)}`
         );
+        
+        console.log('📥 API 回應:', res);
         
         if (res.ok) {
             showNotification(res.msg, 'success');
