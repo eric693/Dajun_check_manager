@@ -1611,6 +1611,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const locationLngInput = document.getElementById('location-lng');
     const addLocationBtn = document.getElementById('add-location-btn');
     const tabOnboardingBtn = document.getElementById('tab-onboarding-btn');
+    const tabEquipmentBtn = document.getElementById('tab-equipment-btn');
 
     if (tabOnboardingBtn) {
         tabOnboardingBtn.addEventListener('click', () => {
@@ -1619,7 +1620,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    const tabEquipmentBtn = document.getElementById('tab-equipment-btn');
     if (tabEquipmentBtn) {
         tabEquipmentBtn.addEventListener('click', () => {
             switchTab('equipment-view');
