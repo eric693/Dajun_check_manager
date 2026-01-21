@@ -1486,9 +1486,16 @@ function displayWorkHoursFromCalculation(data) {
     const hourlyRate = data.hourlyRate || 0;
     const baseSalary = data.baseSalary || 0;
     
-    // ⭐⭐⭐ 判斷員工類型
+    // ⭐⭐⭐ 修正：從 data 中讀取 employeeType
     const employeeType = data.employeeType || '';
+    
+    console.log('🔍 displayWorkHoursFromCalculation 檢查:');
+    console.log('   data:', data);
+    console.log('   employeeType:', employeeType);
+    
     const isTeamMember = employeeType === '組員' || employeeType === '組長';
+    
+    console.log('   isTeamMember:', isTeamMember);
     
     // ⭐⭐⭐ 根據員工類型顯示不同的工時來源說明
     const workHoursSource = isTeamMember 
