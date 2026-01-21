@@ -4394,42 +4394,13 @@ function renderEquipmentList(equipmentList) {
                 <input type="checkbox" 
                        class="equipment-checkbox w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer"
                        data-name="${item.name}"
-                       data-price="${item.price}"
                        data-quantity="${item.quantity}"
                        ${item.received ? 'checked' : ''}>
             </td>
-            <td class="px-4 py-3 text-right font-semibold text-gray-800 dark:text-white">$${item.price}</td>
         `;
         
         tbody.appendChild(row);
     });
-    
-    // 綁定勾選事件
-    const checkboxes = tbody.querySelectorAll('.equipment-checkbox');
-    checkboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', updateTotalAmount);
-    });
-    
-    // 初始化總金額
-    updateTotalAmount();
-}
-
-/**
- * 更新總金額
- */
-function updateTotalAmount() {
-    const checkboxes = document.querySelectorAll('.equipment-checkbox');
-    let total = 0;
-    
-    checkboxes.forEach(checkbox => {
-        if (checkbox.checked) {
-            const price = parseInt(checkbox.dataset.price);
-            const quantity = parseInt(checkbox.dataset.quantity);
-            total += price * quantity;
-        }
-    });
-    
-    document.getElementById('equipment-total-amount').textContent = `$${total}`;
 }
 
 /**
