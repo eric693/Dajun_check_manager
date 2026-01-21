@@ -3912,7 +3912,6 @@ function renderUsersList(users) {
                         <!-- ⭐ 新增：角色選擇器 -->
                         <select onchange="changeUserRole('${user.userId}', '${user.name}', this.value)"
                                 class="px-3 py-1.5 bg-purple-500 hover:bg-purple-600 text-white text-xs font-semibold rounded-md">
-                            <option value="">變更角色</option>
                             <option value="管理員" ${user.dept === '管理員' ? 'selected' : ''}>管理員</option>
                             <option value="組長" ${user.dept === '組長' ? 'selected' : ''}>組長</option>
                             <option value="組員" ${user.dept === '組員' ? 'selected' : ''}>組員</option>
@@ -3999,10 +3998,6 @@ function filterUsersList(query) {
  * ✅ 更改用戶角色（支援多種角色）
  */
 async function changeUserRole(userId, userName, newRole) {
-    // ⭐ 新增：如果選擇「變更角色」，不執行
-    if (!newRole || newRole === '') {
-        return;
-    }
     
     const roleText = newRole;
     
