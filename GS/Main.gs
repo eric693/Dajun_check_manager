@@ -170,6 +170,19 @@ function doGet(e) {
       
       case "reviewOnboarding":
         return respond1(handleReviewOnboarding(e.parameter));
+      
+      // ==================== 入職裝備領用表 ====================
+      case "getEquipmentList":
+        return respond1(handleGetEquipmentList(e.parameter));
+
+      case "getEmployeeEquipmentIssue":
+        return respond1(handleGetEmployeeEquipmentIssue(e.parameter));
+
+      case "saveEquipmentIssue":
+        return respond1(handleSaveEquipmentIssue(e.parameter));
+
+      case "getAllEquipmentIssues":
+        return respond1(handleGetAllEquipmentIssues(e.parameter));
        // ==================== 日薪系統 ====================
       case "setDailyEmployee":
         return respond1(handleSetDailyEmployee(e.parameter));
