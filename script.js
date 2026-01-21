@@ -408,8 +408,6 @@ const showNotification = (message, type = 'success') => {
     }, 3000);
 };
 
-// 確保登入
-// script.js - 完整替換 ensureLogin 函數
 async function ensureLogin() 
 {
     return new Promise(async (resolve) => {
@@ -437,8 +435,8 @@ async function ensureLogin()
           document.getElementById('tab-admin-btn').style.display = 'block';
         }
         
-        // 👇 新增：組長和組員也能使用工作日誌
-        if (['管理員', '組長', '組員'].includes(userDept)) {
+        // 👇 修正：使用 user.dept
+        if (['管理員', '組長', '組員'].includes(user.dept)) {
             const worklogBtn = document.getElementById('tab-worklog-btn');
             if (worklogBtn) {
                 worklogBtn.style.display = 'block';
@@ -480,13 +478,14 @@ async function ensureLogin()
             document.getElementById('tab-admin-btn').style.display = 'block';
           }
           
-          // 👇 新增：組長和組員也能使用工作日誌
-          if (['管理員', '組長', '組員'].includes(userDept)) {
+          // 👇 修正：使用 res.user.dept
+          if (['管理員', '組長', '組員'].includes(res.user.dept)) {
               const worklogBtn = document.getElementById('tab-worklog-btn');
               if (worklogBtn) {
                   worklogBtn.style.display = 'block';
               }
           }
+          
           document.getElementById("user-name").textContent = res.user.name;
           document.getElementById("profile-img").src = res.user.picture || res.user.rate;
           localStorage.setItem("sessionUserId", res.user.userId);
@@ -521,8 +520,7 @@ async function ensureLogin()
         resolve(false);
       }
     });
-
-
+}
 /**
  * 背景驗證 Session（不阻塞 UI）
  */
@@ -543,7 +541,7 @@ async function checkSessionInBackground(token) {
     } catch (error) {
       console.error('背景驗證失敗:', error);
     }
-}}
+}
 
 /**
  * 背景載入異常記錄（不阻塞 UI）
