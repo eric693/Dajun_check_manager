@@ -437,6 +437,14 @@ async function ensureLogin()
           document.getElementById('tab-admin-btn').style.display = 'block';
         }
         
+        // 👇 新增：組長和組員也能使用工作日誌
+        if (['管理員', '組長', '組員'].includes(userDept)) {
+            const worklogBtn = document.getElementById('tab-worklog-btn');
+            if (worklogBtn) {
+                worklogBtn.style.display = 'block';
+            }
+        }
+        
         document.getElementById("user-name").textContent = user.name;
         document.getElementById("profile-img").src = user.picture;
         localStorage.setItem("sessionUserId", user.userId);
@@ -472,6 +480,13 @@ async function ensureLogin()
             document.getElementById('tab-admin-btn').style.display = 'block';
           }
           
+          // 👇 新增：組長和組員也能使用工作日誌
+          if (['管理員', '組長', '組員'].includes(userDept)) {
+              const worklogBtn = document.getElementById('tab-worklog-btn');
+              if (worklogBtn) {
+                  worklogBtn.style.display = 'block';
+              }
+          }
           document.getElementById("user-name").textContent = res.user.name;
           document.getElementById("profile-img").src = res.user.picture || res.user.rate;
           localStorage.setItem("sessionUserId", res.user.userId);
