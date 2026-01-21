@@ -3903,26 +3903,28 @@ function renderUsersList(users) {
                 <!-- 操作按鈕 -->
                 ${!isCurrentUser ? `
                     <div class="flex flex-wrap gap-2">
-                        <!-- 新增：編輯姓名按鈕 -->
+                        <!-- 姓名編輯 -->
                         <button onclick="openEditNameDialog('${user.userId}', '${user.name}')"
-                                class="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold rounded-md transition-colors">
+                                class="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold rounded-md">
                             ✏️ 編輯姓名
                         </button>
                         
-                        ${isAdmin ? `
-                            <button onclick="changeUserRole('${user.userId}', '${user.name}', 'employee')"
-                                    class="flex-1 min-w-[120px] px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold rounded-md transition-colors">
-                                降級為員工
-                            </button>
-                        ` : `
-                            <button onclick="changeUserRole('${user.userId}', '${user.name}', 'admin')"
-                                    class="flex-1 min-w-[120px] px-3 py-1.5 bg-purple-500 hover:bg-purple-600 text-white text-xs font-semibold rounded-md transition-colors">
-                                升級為管理員
-                            </button>
-                        `}
+                        <!-- ⭐ 新增：角色選擇器 -->
+                        <select onchange="changeUserRole('${user.userId}', '${user.name}', this.value)"
+                                class="px-3 py-1.5 bg-purple-500 hover:bg-purple-600 text-white text-xs font-semibold rounded-md">
+                            <option value="">變更角色</option>
+                            <option value="管理員" ${user.dept === '管理員' ? 'selected' : ''}>管理員</option>
+                            <option value="組長" ${user.dept === '組長' ? 'selected' : ''}>組長</option>
+                            <option value="組員" ${user.dept === '組員' ? 'selected' : ''}>組員</option>
+                            <option value="行政" ${user.dept === '行政' ? 'selected' : ''}>行政</option>
+                            <option value="會計" ${user.dept === '會計' ? 'selected' : ''}>會計</option>
+                            <option value="繪圖" ${user.dept === '繪圖' ? 'selected' : ''}>繪圖</option>
+                            <option value="員工" ${user.dept === '員工' ? 'selected' : ''}>員工</option>
+                        </select>
                         
+                        <!-- 刪除 -->
                         <button onclick="confirmDeleteUser('${user.userId}', '${user.name}')"
-                                class="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold rounded-md transition-colors">
+                                class="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold rounded-md">
                             刪除
                         </button>
                     </div>
@@ -3939,7 +3941,7 @@ function renderUsersList(users) {
 }
 
 /**
- * 更新統計數據
+ * 更新統計數據（顯示各角色數量）
  */
 function updateUsersStats(users) {
     const totalEl = document.getElementById('total-users-count');
@@ -3947,11 +3949,30 @@ function updateUsersStats(users) {
     const employeeEl = document.getElementById('employee-users-count');
     
     const adminCount = users.filter(u => u.dept === '管理員').length;
-    const employeeCount = users.length - adminCount;
+    const leaderCount = users.filter(u => u.dept === '組長').length;
+    const memberCount = users.filter(u => u.dept === '組員').length;
+    const adminStaffCount = users.filter(u => u.dept === '行政').length;
+    const accountingCount = users.filter(u => u.dept === '會計').length;
+    const designCount = users.filter(u => u.dept === '繪圖').length;
+    const employeeCount = users.filter(u => u.dept === '員工').length;
     
     if (totalEl) totalEl.textContent = users.length;
     if (adminEl) adminEl.textContent = adminCount;
-    if (employeeEl) employeeEl.textContent = employeeCount;
+    
+    // ⭐ 顯示所有非管理員角色總數
+    if (employeeEl) {
+        employeeEl.textContent = leaderCount + memberCount + adminStaffCount + accountingCount + designCount + employeeCount;
+    }
+    
+    // 可選：在控制台顯示詳細統計
+    console.log('📊 角色統計:');
+    console.log(`   管理員: ${adminCount}`);
+    console.log(`   組長: ${leaderCount}`);
+    console.log(`   組員: ${memberCount}`);
+    console.log(`   行政: ${adminStaffCount}`);
+    console.log(`   會計: ${accountingCount}`);
+    console.log(`   繪圖: ${designCount}`);
+    console.log(`   員工: ${employeeCount}`);
 }
 
 /**
@@ -3975,19 +3996,28 @@ function filterUsersList(query) {
 }
 
 /**
- * 更改用戶角色
+ * ✅ 更改用戶角色（支援多種角色）
  */
 async function changeUserRole(userId, userName, newRole) {
-    const roleText = newRole === 'admin' ? '管理員' : '員工';
+    // ⭐ 新增：如果選擇「變更角色」，不執行
+    if (!newRole || newRole === '') {
+        return;
+    }
+    
+    const roleText = newRole;
     
     if (!confirm(`確定要將「${userName}」的角色改為「${roleText}」嗎？`)) {
+        // 取消後，重置下拉選單
+        location.reload();
         return;
     }
     
     try {
         showNotification('處理中...', 'info');
         
-        const res = await callApifetch(`updateUserRole&userId=${encodeURIComponent(userId)}&role=${newRole}`);
+        const res = await callApifetch(
+            `updateUserRole&userId=${encodeURIComponent(userId)}&role=${encodeURIComponent(newRole)}`
+        );
         
         if (res.ok) {
             showNotification(`已成功將「${userName}」設為${roleText}`, 'success');
@@ -3995,24 +4025,25 @@ async function changeUserRole(userId, userName, newRole) {
             // 重新載入列表
             await loadAllUsers();
             
-            // 如果改的是當前用戶，需要重新整理頁面
+            // 如果改的是當前用戶，重新整理頁面
             const currentUserId = localStorage.getItem('sessionUserId');
             if (userId === currentUserId) {
-                showNotification('您的權限已變更，即將重新整理頁面...', 'warning');
+                showNotification('您的角色已變更，即將重新整理頁面...', 'warning');
                 setTimeout(() => {
                     window.location.reload();
                 }, 2000);
             }
         } else {
             showNotification(res.msg || '操作失敗', 'error');
+            location.reload(); // 失敗也重載，避免下拉選單顯示錯誤
         }
         
     } catch (error) {
         console.error('更改角色失敗:', error);
         showNotification('操作失敗，請稍後再試', 'error');
+        location.reload();
     }
 }
-
 /**
  * 確認刪除用戶
  */
