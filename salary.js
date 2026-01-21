@@ -442,6 +442,10 @@ function displayEmployeeSalary(data) {
     const salaryType = data['薪資類型'] || '月薪';
     const isHourly = salaryType === '時薪';
     
+    // ⭐⭐⭐ 取得員工類型
+    const employeeType = data['員工類型'] || '';
+    const isTeamMember = employeeType === '組員' || employeeType === '組長';
+    
     // 應發總額與實發金額
     safeSet('gross-salary', formatCurrency(data['應發總額']));
     safeSet('net-salary', formatCurrency(data['實發金額']));
@@ -466,7 +470,7 @@ function displayEmployeeSalary(data) {
         // 時薪顯示方式
         const hourlyRate = parseFloat(data['時薪']) || 0;
         const totalWorkHours = parseFloat(data['工作時數']) || 0;
-        const totalWorkHoursInt = Math.floor(totalWorkHours);
+        
         // 修改基本薪資的顯示文字
         const baseSalaryLabel = document.querySelector('[for="detail-base-salary"]') || 
                                 document.querySelector('#detail-base-salary')?.previousElementSibling;
@@ -487,7 +491,19 @@ function displayEmployeeSalary(data) {
                 hourlyInfo.className = 'hourly-info text-xs text-purple-400 mt-1';
                 baseSalaryEl.parentElement.appendChild(hourlyInfo);
             }
-            hourlyInfo.textContent = `時薪 $${hourlyRate} × ${Math.floor(totalWorkHours)}h`;
+            
+            // ⭐⭐⭐ 根據員工類型顯示不同的工時來源
+            if (isTeamMember) {
+                hourlyInfo.innerHTML = `
+                    時薪 $${hourlyRate} × ${Math.floor(totalWorkHours)}h<br>
+                    <span class="text-blue-300">📋 工時來源：工作日誌</span>
+                `;
+            } else {
+                hourlyInfo.innerHTML = `
+                    時薪 $${hourlyRate} × ${Math.floor(totalWorkHours)}h<br>
+                    <span class="text-green-300">🕐 工時來源：打卡記錄</span>
+                `;
+            }
         }
     } else {
         // 月薪顯示方式（原本的邏輯）
@@ -939,6 +955,10 @@ async function handleSalaryCalculation() {
 function displaySalaryCalculation(data, container) {
     if (!container) return;
     
+    // ⭐⭐⭐ 判斷員工類型
+    const employeeType = data.employeeType || '';
+    const isTeamMember = employeeType === '組員' || employeeType === '組長';
+
     const totalDeductions = 
         (parseFloat(data.laborFee) || 0) + 
         (parseFloat(data.healthFee) || 0) + 
@@ -986,6 +1006,15 @@ function displaySalaryCalculation(data, container) {
             ${isHourly ? `
                 <div class="bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-200 dark:border-purple-700 rounded-lg p-4 mb-6">
                     <h4 class="font-semibold text-purple-800 dark:text-purple-300 mb-3">時薪工時統計</h4>
+                    
+                    <!-- ⭐⭐⭐ 新增工時來源說明 -->
+                    <div class="mb-3 p-2 ${isTeamMember ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-green-100 dark:bg-green-900/30'} rounded text-sm">
+                        ${isTeamMember 
+                            ? '<span class="text-blue-700 dark:text-blue-300">📋 工時來源：工作日誌（組員/組長）</span>'
+                            : '<span class="text-green-700 dark:text-green-300">🕐 工時來源：打卡記錄</span>'
+                        }
+                    </div>
+                    
                     <div class="grid grid-cols-3 gap-4 text-center">
                         <div>
                             <p class="text-sm text-purple-600 dark:text-purple-400">時薪</p>
@@ -1453,10 +1482,18 @@ function displayWorkHoursFromCalculation(data) {
     workHoursCard.id = 'work-hours-card';
     workHoursCard.className = 'feature-box bg-purple-900/20 border-purple-700 mb-4';
     
-    // ⭐⭐⭐ 修正：保留小數位數
     const totalWorkHours = parseFloat(data.totalWorkHours || 0).toFixed(1);
     const hourlyRate = data.hourlyRate || 0;
     const baseSalary = data.baseSalary || 0;
+    
+    // ⭐⭐⭐ 判斷員工類型
+    const employeeType = data.employeeType || '';
+    const isTeamMember = employeeType === '組員' || employeeType === '組長';
+    
+    // ⭐⭐⭐ 根據員工類型顯示不同的工時來源說明
+    const workHoursSource = isTeamMember 
+        ? '<p class="text-sm text-blue-300">📋 工時來源：工作日誌（組員/組長專用）</p>'
+        : '<p class="text-sm text-green-300">🕐 工時來源：打卡記錄</p>';
     
     workHoursCard.innerHTML = `
       <h4 class="font-semibold mb-3 text-purple-400">本月工作時數統計</h4>
@@ -1477,13 +1514,14 @@ function displayWorkHoursFromCalculation(data) {
         </div>
       </div>
       
-      <div class="p-3 bg-purple-800/10 rounded-lg text-sm text-purple-300">
-        💡 工作時數已包含在薪資計算中
+      <div class="p-3 bg-purple-800/10 rounded-lg text-sm">
+        ${workHoursSource}
+        <p class="text-purple-300 mt-1">💡 工作時數已包含在薪資計算中</p>
       </div>
     `;
     
     detailsSection.insertBefore(workHoursCard, detailsSection.firstChild);
-  }
+}
 
 
 function displayOvertimeFromCalculation(data) {
