@@ -668,23 +668,27 @@
                     </div>
                     
                     <div id="current-salary-content" style="display: none;">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <!-- ⭐⭐⭐ 修改：只顯示應發總額和實發金額，隱藏扣款總額 -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div class="info-card" style="background: rgba(34, 197, 94, 0.1);">
                                 <div class="info-label" data-i18n="SALARY_GROSS">應發總額</div>
                                 <div id="gross-salary" class="info-value" style="color: #22c55e;">$0</div>
                             </div>
+                            <!-- ⭐ 隱藏扣款總額
                             <div class="info-card" style="background: rgba(239, 68, 68, 0.1);">
                                 <div class="info-label" data-i18n="SALARY_DEDUCTIONS">扣款總額</div>
                                 <div id="total-deductions" class="info-value" style="color: #ef4444;">$0</div>
                             </div>
+                            -->
                             <div class="info-card" style="background: rgba(168, 85, 247, 0.1);">
                                 <div class="info-label" data-i18n="SALARY_NET">實發金額</div>
                                 <div id="net-salary" class="info-value" style="color: #a855f7;">$0</div>
                             </div>
                         </div>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                            <!-- 👈 應發項目 -->
+                                
+                        <!-- ⭐⭐⭐ 修改：只顯示應發項目，隱藏扣款項目 -->
+                        <div class="grid grid-cols-1 gap-4 mt-4">
+                            <!-- 應發項目 -->
                             <div class="feature-box">
                                 <h4 class="font-semibold mb-3 text-green-400" data-i18n="SALARY_EARNINGS_TITLE">應發項目</h4>
                                 <div class="space-y-2 text-sm">
@@ -726,8 +730,7 @@
                                     </div>
                                 </div>
                             </div>
-                            
-                            <!-- 👈 扣款項目（只保留一個） -->
+                            <!-- ⭐ 隱藏扣款項目
                             <div class="feature-box">
                                 <h4 class="font-semibold mb-3 text-red-400" data-i18n="SALARY_DEDUCTIONS_TITLE">扣款項目</h4>
                                 <div class="space-y-2 text-sm">
@@ -743,10 +746,7 @@
                                         <span data-i18n="SALARY_EMPLOYMENT_INS">就業保險費</span>
                                         <span id="detail-employment-fee" class="font-mono">$0</span>
                                     </div>
-                                    <!-- <div class="flex justify-between">
-                                        <span data-i18n="SALARY_PENSION_RATE">勞退自提率 (%)</span>
-                                        <span id="detail-pension-rate" class="font-mono">0%</span>
-                                    </div> -->
+
                                     <div class="flex justify-between">
                                         <span data-i18n="SALARY_PENSION">勞退自提金額</span>
                                         <span id="detail-pension-self" class="font-mono">$0</span>
@@ -764,9 +764,10 @@
                                         <span id="detail-other-deductions" class="font-mono">$0</span>
                                     </div>
                                 </div>
-                            </div>
+                            </div> -->
                         </div>
                         
+                        <!-- ⭐ 隱藏銀行資訊
                         <div class="mt-4 pt-4 border-t border-gray-700">
                             <h4 class="font-semibold mb-2" data-i18n="SALARY_BANK_INFO_TITLE">銀行資訊</h4>
                             <div class="text-sm">
@@ -776,6 +777,7 @@
                                 <span id="detail-bank-account" class="font-mono">--</span>
                             </div>
                         </div>
+                        -->
 
                         <!-- ⭐⭐⭐ 出勤明細區塊（由 JS 動態產生內容） -->
                         <div class="mt-6" id="attendance-details-section" style="display: none;">
