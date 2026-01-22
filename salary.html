@@ -846,6 +846,21 @@
                                     <option value="約聘" data-i18n-option="CONTRACT">約聘</option>
                                 </select>
                             </div>
+                            <!-- ⭐⭐⭐ 新增：部門選擇器 -->
+                            <div class="form-group">
+                                <label class="form-label required" data-i18n="SALARY_DEPARTMENT_LABEL">部門</label>
+                                <select id="config-department" class="form-select" required>
+                                    <option value="">請選擇部門</option>
+                                    <option value="組長">組長（使用工作日誌工時）</option>
+                                    <option value="組員">組員（使用工作日誌工時）</option>
+                                    <option value="行政">行政（使用打卡工時）</option>
+                                    <option value="會計">會計（使用打卡工時）</option>
+                                    <option value="繪圖">繪圖（使用打卡工時）</option>
+                                    <option value="管理員">管理員（使用打卡工時）</option>
+                                    <option value="員工">員工（使用打卡工時）</option>
+                                </select>
+                                <span class="form-hint">💡 組長/組員會使用「工作日誌」計算工時，其他部門使用「打卡記錄」</span>
+                            </div>
                             <div class="form-group">
                                 <label class="form-label required" data-i18n="SALARY_TYPE_LABEL">薪資類型</label>
                                 <select id="config-salary-type" class="form-select" required>

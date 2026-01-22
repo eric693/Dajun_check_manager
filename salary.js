@@ -442,9 +442,9 @@ function displayEmployeeSalary(data) {
     const salaryType = data['薪資類型'] || '月薪';
     const isHourly = salaryType === '時薪';
     
-    // ⭐⭐⭐ 取得員工類型
-    const employeeType = data['員工類型'] || '';
-    const isTeamMember = employeeType === '組員' || employeeType === '組長';
+    // ⭐⭐⭐ 新增：取得部門
+    const department = data['部門'] || '';
+    const useWorklog = (department === '組長' || department === '組員');
     
     // 應發總額與實發金額
     safeSet('gross-salary', formatCurrency(data['應發總額']));
@@ -492,16 +492,16 @@ function displayEmployeeSalary(data) {
                 baseSalaryEl.parentElement.appendChild(hourlyInfo);
             }
             
-            // ⭐⭐⭐ 根據員工類型顯示不同的工時來源
-            if (isTeamMember) {
+            // ⭐⭐⭐ 根據部門顯示不同的工時來源
+            if (useWorklog) {
                 hourlyInfo.innerHTML = `
                     時薪 $${hourlyRate} × ${Math.floor(totalWorkHours)}h<br>
-                    <span class="text-blue-300">📋 工時來源：工作日誌</span>
+                    <span class="text-blue-300">📋 工時來源：工作日誌（${department}）</span>
                 `;
             } else {
                 hourlyInfo.innerHTML = `
                     時薪 $${hourlyRate} × ${Math.floor(totalWorkHours)}h<br>
-                    <span class="text-green-300">🕐 工時來源：打卡記錄</span>
+                    <span class="text-green-300">🕐 工時來源：打卡記錄（${department}）</span>
                 `;
             }
         }
@@ -771,6 +771,7 @@ async function handleSalaryConfigSubmit(e) {
     const employeeName = safeGetValue('config-employee-name');
     const idNumber = safeGetValue('config-id-number');           // ⭐ 加入
     const employeeType = safeGetValue('config-employee-type');   // ⭐ 加入
+    const department = safeGetValue('config-department');      // ⭐ 新增：部門
     const salaryType = safeGetValue('config-salary-type');       // ⭐ 加入
     const baseSalary = safeGetValue('config-base-salary');
     
@@ -811,8 +812,8 @@ async function handleSalaryConfigSubmit(e) {
         return;
     }
     
-    if (!employeeType || !salaryType) {
-        showNotification(t('SALARY_SELECT_TYPE'), 'error');
+    if (!employeeType || !salaryType || !department) {  // ⭐ 新增部門驗證
+        showNotification('請選擇員工類型、部門和薪資類型', 'error');
         return;
     }
     
@@ -821,12 +822,13 @@ async function handleSalaryConfigSubmit(e) {
         
         // ⭐ 重新排序參數，與後端 Sheet 欄位順序一致
         const queryString = 
-            // 基本資訊 (6個參數)
+            // 基本資訊 (7個參數)
             `employeeId=${encodeURIComponent(employeeId)}` +
             `&employeeName=${encodeURIComponent(employeeName)}` +
-            `&idNumber=${encodeURIComponent(idNumber)}` +                    // ⭐ 新增
-            `&employeeType=${encodeURIComponent(employeeType)}` +            // ⭐ 新增
-            `&salaryType=${encodeURIComponent(salaryType)}` +                // ⭐ 新增
+            `&idNumber=${encodeURIComponent(idNumber)}` +
+            `&employeeType=${encodeURIComponent(employeeType)}` +
+            `&department=${encodeURIComponent(department)}` +      // ⭐ 新增
+            `&salaryType=${encodeURIComponent(salaryType)}` +
             `&baseSalary=${encodeURIComponent(baseSalary)}` +
             
             // 固定津貼 (6個參數)
@@ -955,9 +957,9 @@ async function handleSalaryCalculation() {
 function displaySalaryCalculation(data, container) {
     if (!container) return;
     
-    // ⭐⭐⭐ 判斷員工類型
-    const employeeType = data.employeeType || '';
-    const isTeamMember = employeeType === '組員' || employeeType === '組長';
+    // ⭐⭐⭐ 取得部門
+    const department = data.department || '';
+    const useWorklog = (department === '組長' || department === '組員');
 
     const totalDeductions = 
         (parseFloat(data.laborFee) || 0) + 
@@ -1486,21 +1488,20 @@ function displayWorkHoursFromCalculation(data) {
     const hourlyRate = data.hourlyRate || 0;
     const baseSalary = data.baseSalary || 0;
     
-    // ⭐⭐⭐ 修正：從 data 中讀取 employeeType
-    const employeeType = data.employeeType || '';
+    // ⭐⭐⭐ 從 data 中讀取部門
+    const department = data.department || '';
+    const useWorklog = (department === '組長' || department === '組員');
     
     console.log('🔍 displayWorkHoursFromCalculation 檢查:');
     console.log('   data:', data);
-    console.log('   employeeType:', employeeType);
+    console.log('   department:', department);
+    console.log('   useWorklog:', useWorklog);
     
-    const isTeamMember = employeeType === '組員' || employeeType === '組長';
     
-    console.log('   isTeamMember:', isTeamMember);
-    
-    // ⭐⭐⭐ 根據員工類型顯示不同的工時來源說明
-    const workHoursSource = isTeamMember 
-        ? '<p class="text-sm text-blue-300">📋 工時來源：工作日誌（組員/組長專用）</p>'
-        : '<p class="text-sm text-green-300">🕐 工時來源：打卡記錄</p>';
+    // ⭐⭐⭐ 根據部門顯示不同的工時來源說明
+    const workHoursSource = useWorklog 
+        ? `<p class="text-sm text-blue-300">📋 工時來源：工作日誌（${department}）</p>`
+        : `<p class="text-sm text-green-300">🕐 工時來源：打卡記錄（${department}）</p>`;
     
     workHoursCard.innerHTML = `
       <h4 class="font-semibold mb-3 text-purple-400">本月工作時數統計</h4>
