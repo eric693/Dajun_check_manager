@@ -780,7 +780,7 @@ async function handleSalaryConfigSubmit(e) {
     const salaryType = safeGetValue('config-salary-type');       // ⭐ 加入
     const baseSalary = safeGetValue('config-base-salary');
     
-    // ⭐ 固定津貼（6項）
+    // 固定津貼（6項）
     const positionAllowance = safeGetValue('config-position-allowance') || '0';
     const mealAllowance = safeGetValue('config-meal-allowance') || '0';
     const transportAllowance = safeGetValue('config-transport-allowance') || '0';
