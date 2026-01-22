@@ -772,6 +772,11 @@ async function handleSalaryConfigSubmit(e) {
     const idNumber = safeGetValue('config-id-number');           // ⭐ 加入
     const employeeType = safeGetValue('config-employee-type');   // ⭐ 加入
     const department = safeGetValue('config-department');      // ⭐ 新增：部門
+    // const department = safeGetValue('config-department');
+    console.log('🔍 除錯檢查:');
+    console.log('   config-department 元素:', document.getElementById('config-department'));
+    console.log('   選中的值:', department);
+    console.log('   選中的文字:', document.getElementById('config-department').selectedOptions[0]?.text);
     const salaryType = safeGetValue('config-salary-type');       // ⭐ 加入
     const baseSalary = safeGetValue('config-base-salary');
     
