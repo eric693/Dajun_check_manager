@@ -872,8 +872,8 @@
                             <div class="form-group">
                                 <label class="form-label required" data-i18n="SALARY_BASE_LABEL">基本薪資</label>
                                 <input type="number" id="config-base-salary" class="form-input" 
-                                       placeholder="27,470" min="0" step="1" required>
-                                <span class="form-hint warning">⚠️ <strong>2025年基本工資</strong>: 月薪 28,590 元 | 時薪 190 元</span>
+                                       placeholder="29,500" min="0" step="1" required>
+                                <span class="form-hint warning">⚠️ <strong>2026年基本工資</strong>: 月薪 29,500 元 | 時薪 196 元</span>
                             </div>
                         </div>
                     </div>
@@ -1656,31 +1656,77 @@
             );
         }
 
+        /**
+         * ✅ 取得勞保投保薪資級距（2026 年最新版）
+         * 
+         * 根據勞動部 2026 年最新公告：
+         * - 基本工資：月薪 29,500 元 | 時薪 196 元
+         * - 最低投保級距：27,600 元（從 26,400 調整）
+         * - 共 39 級投保級距
+         * 
+         * @param {number} salary - 實際月薪
+         * @returns {number} 對應的投保薪資級距
+         */
         function getInsuredSalary(salary) {
+            // 2026 年勞保投保薪資分級表（共 39 級）
             const brackets = [
-                { min: 0, max: 26400, insured: 26400 },
-                { min: 26401, max: 27600, insured: 27600 },
-                { min: 27601, max: 28800, insured: 28800 },
-                { min: 28801, max: 30300, insured: 30300 },
-                { min: 30301, max: 31800, insured: 31800 },
-                { min: 31801, max: 33300, insured: 33300 },
-                { min: 33301, max: 34800, insured: 34800 },
-                { min: 34801, max: 36300, insured: 36300 },
-                { min: 36301, max: 38200, insured: 38200 },
-                { min: 38201, max: 40100, insured: 40100 },
-                { min: 40101, max: 42000, insured: 42000 },
-                { min: 42001, max: 43900, insured: 43900 },
-                { min: 43901, max: 45800, insured: 45800 },
-                { min: 45801, max: Infinity, insured: 45800 }
+                // 低薪資級距（第 1-12 級）
+                { min: 0, max: 27600, insured: 27600 },      // 第1級 ⭐ 新：從 26400 調整
+                { min: 27601, max: 28800, insured: 28800 },  // 第2級
+                { min: 28801, max: 30300, insured: 30300 },  // 第3級 ⭐ 基本工資 29500 適用此級
+                { min: 30301, max: 31800, insured: 31800 },  // 第4級
+                { min: 31801, max: 33300, insured: 33300 },  // 第5級
+                { min: 33301, max: 34800, insured: 34800 },  // 第6級
+                { min: 34801, max: 36300, insured: 36300 },  // 第7級
+                { min: 36301, max: 38200, insured: 38200 },  // 第8級
+                { min: 38201, max: 40100, insured: 40100 },  // 第9級
+                { min: 40101, max: 42000, insured: 42000 },  // 第10級
+                { min: 42001, max: 43900, insured: 43900 },  // 第11級
+                { min: 43901, max: 45800, insured: 45800 },  // 第12級
+                
+                // 中薪資級距（第 13-24 級）
+                { min: 45801, max: 48200, insured: 48200 },  // 第13級
+                { min: 48201, max: 50600, insured: 50600 },  // 第14級
+                { min: 50601, max: 53000, insured: 53000 },  // 第15級
+                { min: 53001, max: 55400, insured: 55400 },  // 第16級
+                { min: 55401, max: 57800, insured: 57800 },  // 第17級
+                { min: 57801, max: 60800, insured: 60800 },  // 第18級
+                { min: 60801, max: 63800, insured: 63800 },  // 第19級
+                { min: 63801, max: 66800, insured: 66800 },  // 第20級
+                { min: 66801, max: 69800, insured: 69800 },  // 第21級
+                { min: 69801, max: 72800, insured: 72800 },  // 第22級
+                { min: 72801, max: 76500, insured: 76500 },  // 第23級
+                { min: 76501, max: 80200, insured: 80200 },  // 第24級
+                
+                // 高薪資級距（第 25-39 級）
+                { min: 80201, max: 83900, insured: 83900 },   // 第25級
+                { min: 83901, max: 87600, insured: 87600 },   // 第26級
+                { min: 87601, max: 92100, insured: 92100 },   // 第27級
+                { min: 92101, max: 96600, insured: 96600 },   // 第28級
+                { min: 96601, max: 101100, insured: 101100 }, // 第29級
+                { min: 101101, max: 105600, insured: 105600 }, // 第30級
+                { min: 105601, max: 110100, insured: 110100 }, // 第31級
+                { min: 110101, max: 115500, insured: 115500 }, // 第32級
+                { min: 115501, max: 120900, insured: 120900 }, // 第33級
+                { min: 120901, max: 126300, insured: 126300 }, // 第34級
+                { min: 126301, max: 131700, insured: 131700 }, // 第35級
+                { min: 131701, max: 137100, insured: 137100 }, // 第36級
+                { min: 137101, max: 142500, insured: 142500 }, // 第37級
+                { min: 142501, max: 147900, insured: 147900 }, // 第38級
+                { min: 147901, max: Infinity, insured: 150000 } // 第39級（最高）
             ];
             
+            // 查找對應級距
             for (const bracket of brackets) {
                 if (salary >= bracket.min && salary <= bracket.max) {
+                    console.log(`💼 薪資 ${salary} → 投保級距 ${bracket.insured}`);
                     return bracket.insured;
                 }
             }
             
-            return 26400;
+            // 預設返回最低級距（2026 年為 27,600）
+            console.warn(`⚠️ 薪資 ${salary} 未匹配任何級距，使用最低級距 27,600`);
+            return 27600;
         }
 
         function setCalculatedValues(
