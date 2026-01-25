@@ -1108,27 +1108,28 @@ function displayBatchPreview(data) {
 async function confirmBatchUpload() {
     if (batchData.length === 0) return;
     
+    // ✅ 硬性限制
     if (batchData.length > 200) {
         showMessage('❌ 單次上傳不可超過 200 筆，請分批上傳', 'error');
         return;
     }
     
+    // ✅ 軟性警告
     if (batchData.length > 100) {
-        const confirm = window.confirm(
+        const userConfirm = window.confirm(
             `⚠️ 您即將上傳 ${batchData.length} 筆資料\n\n` +
-            `建議單次上傳不超過 100 筆，以避免超時或失败。\n\n` +
+            `建議單次上傳不超過 100 筆，以避免超時。\n` +
             `系統將自動分批上傳（每批 50 筆）\n\n` +
             `是否繼續？`
         );
-        if (!confirm) return;
+        if (!userConfirm) return;
     }
     
-    const BATCH_SIZE = 50; 
+    const BATCH_SIZE = 50;
     const totalBatches = Math.ceil(batchData.length / BATCH_SIZE);
     
     console.log('═══════════════════════════════════════');
     console.log('📤 開始批量上傳');
-    console.log('═══════════════════════════════════════');
     console.log('總資料筆數:', batchData.length);
     console.log('分批數量:', totalBatches);
     console.log('每批筆數:', BATCH_SIZE);
@@ -1159,20 +1160,17 @@ async function confirmBatchUpload() {
             console.log(`   筆數: ${batch.length}`);
             
             try {
-                // ✅ 方案 A: 使用 GET 方式（URL 參數）
-                // 將資料轉成 JSON 字串並編碼
+                // ✅ 使用標準 fetch GET 方式
                 const shiftsJson = encodeURIComponent(JSON.stringify(batch));
                 const url = `${apiUrl}?action=batchAddShifts&token=${token}&shiftsArray=${shiftsJson}`;
                 
                 console.log(`   URL 長度: ${url.length} 字元`);
                 
-                // 檢查 URL 長度
                 if (url.length > 8000) {
-                    console.warn(`   ⚠️ URL 過長 (${url.length} 字元)，可能會失敗`);
-                    console.warn(`   建議: 減少每批數量至 30 筆`);
+                    console.warn(`   ⚠️ URL 過長，可能會失敗`);
                 }
                 
-                // ✅ 使用標準 fetch，不帶 callback 參數
+                // ✅ 標準 fetch，不帶 callback
                 const response = await fetch(url, {
                     method: 'GET',
                     headers: {
@@ -1180,16 +1178,16 @@ async function confirmBatchUpload() {
                     }
                 });
                 
-                console.log(`   📥 HTTP 狀態: ${response.status} ${response.statusText}`);
+                console.log(`   HTTP 狀態: ${response.status}`);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
-                // 解析 JSON 回應
+                // ✅ 直接解析 JSON
                 const data = await response.json();
                 
-                console.log(`   📥 回應:`, data);
+                console.log(`   回應:`, data);
                 
                 if (data.ok) {
                     const batchSuccess = data.results?.success || batch.length;
@@ -1207,12 +1205,12 @@ async function confirmBatchUpload() {
                     }
                 } else {
                     failCount += batch.length;
-                    const errorMsg = `批次 ${currentBatch}: ${data.msg || data.message || '未知錯誤'}`;
+                    const errorMsg = `批次 ${currentBatch}: ${data.msg || '未知錯誤'}`;
                     errors.push(errorMsg);
-                    console.error(`   ❌ 批次失敗:`, data.msg || data.message);
+                    console.error(`   ❌ 批次失敗:`, data.msg);
                 }
                 
-                // 批次間隔 1 秒，避免請求過快
+                // 批次間隔 1 秒
                 if (i < totalBatches - 1) {
                     console.log(`   ⏱️ 等待 1 秒...`);
                     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -1223,19 +1221,16 @@ async function confirmBatchUpload() {
                 const errorMsg = `批次 ${currentBatch}: ${error.message}`;
                 errors.push(errorMsg);
                 console.error(`   ❌ 批次錯誤:`, error);
-                console.error(`   錯誤堆疊:`, error.stack);
             }
         }
         
         console.log('');
         console.log('═══════════════════════════════════════');
         console.log('📊 上傳完成');
-        console.log('═══════════════════════════════════════');
         console.log('✅ 成功:', successCount, '筆');
         console.log('❌ 失敗:', failCount, '筆');
         
         if (errors.length > 0) {
-            console.log('');
             console.log('錯誤詳情:');
             errors.forEach((err, index) => {
                 console.log(`  ${index + 1}. ${err}`);
@@ -1243,13 +1238,12 @@ async function confirmBatchUpload() {
         }
         console.log('═══════════════════════════════════════');
         
-        // 顯示最終結果
-        let resultMsg = `✅ 批量上傳完成！\n\n`;
-        resultMsg += `成功: ${successCount} 筆\n`;
+        // 顯示結果
+        let resultMsg = `✅ 批量上傳完成！\n\n成功: ${successCount} 筆`;
         if (failCount > 0) {
-            resultMsg += `失敗: ${failCount} 筆\n`;
-            if (errors.length > 0 && errors.length <= 5) {
-                resultMsg += `\n錯誤:\n${errors.slice(0, 5).join('\n')}`;
+            resultMsg += `\n失敗: ${failCount} 筆`;
+            if (errors.length > 0 && errors.length <= 3) {
+                resultMsg += `\n\n錯誤:\n${errors.slice(0, 3).join('\n')}`;
             }
         }
         
@@ -1258,19 +1252,13 @@ async function confirmBatchUpload() {
         // 清理並刷新
         cancelBatchUpload();
         
-        // 切換到查看頁面並刷新數據
         setTimeout(() => {
             switchTab('view');
             loadShifts();
         }, 1500);
         
     } catch (error) {
-        console.error('');
-        console.error('❌❌❌ 批量上傳失敗');
-        console.error('錯誤訊息:', error.message);
-        console.error('錯誤堆疊:', error.stack);
-        console.error('═══════════════════════════════════════');
-        
+        console.error('❌ 批量上傳失敗:', error);
         showMessage('❌ 批量上傳失敗: ' + error.message, 'error');
     }
 }
