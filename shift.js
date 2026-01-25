@@ -919,6 +919,14 @@ function parseBatchData(content, filename) {
     const lines = content.split('\n');
     const data = [];
     
+    console.log('═══════════════════════════════════════');
+    console.log('📤 開始解析批量上傳檔案');
+    console.log('═══════════════════════════════════════');
+    console.log('檔案名稱:', filename);
+    console.log('總行數:', lines.length);
+    console.log('預期格式: 員工ID, 員工姓名, 日期, 班別, 上班時間, 下班時間, 地點, 備註');
+    console.log('');
+    
     // 從第二行開始(跳過標題)
     for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
@@ -927,28 +935,66 @@ function parseBatchData(content, filename) {
         // ⭐ 正確處理 CSV 引號
         const values = parseCSVLine(line);
         
-        // 檢查是否有足夠的欄位(至少 7 個)
-        if (values.length >= 7) {
-            // 跳過排班ID欄位(第一個),從員工ID開始
+        if (i <= 3) {
+            console.log(`第 ${i + 1} 行解析結果:`);
+            console.log('  原始內容:', line.substring(0, 100) + (line.length > 100 ? '...' : ''));
+            console.log('  解析欄位數:', values.length);
+            console.log('  欄位內容:', values);
+        }
+        
+        // ✅ 修正：CSV 範本格式為：員工ID, 員工姓名, 日期, 班別, 上班時間, 下班時間, 地點, 備註
+        // 檢查是否有足夠的欄位(至少 6 個：員工ID, 姓名, 日期, 班別, 開始, 結束)
+        if (values.length >= 6) {
             const shift = {
-                employeeId: values[1],      // 第 2 欄: 員工ID
-                employeeName: values[2],    // 第 3 欄: 員工姓名
-                date: values[3],            // 第 4 欄: 日期
-                shiftType: values[4],       // 第 5 欄: 班別
-                startTime: values[5],       // 第 6 欄: 上班時間
-                endTime: values[6],         // 第 7 欄: 下班時間
-                location: values[7] || '',  // 第 8 欄: 地點
-                note: values[8] || ''       // 第 9 欄: 備註
+                employeeId: values[0],      // ✅ 第 1 欄: 員工ID
+                employeeName: values[1],    // ✅ 第 2 欄: 員工姓名
+                date: values[2],            // ✅ 第 3 欄: 日期
+                shiftType: values[3],       // ✅ 第 4 欄: 班別
+                startTime: values[4],       // ✅ 第 5 欄: 上班時間
+                endTime: values[5],         // ✅ 第 6 欄: 下班時間
+                location: values[6] || '',  // ✅ 第 7 欄: 地點
+                note: values[7] || ''       // ✅ 第 8 欄: 備註
             };
+            
+            if (i <= 3) {
+                console.log('  ✅ 解析結果:');
+                console.log('    員工ID:', shift.employeeId);
+                console.log('    員工姓名:', shift.employeeName);
+                console.log('    日期:', shift.date);
+                console.log('    班別:', shift.shiftType);
+            }
             
             // 驗證必填欄位
             if (shift.employeeId && shift.date && shift.shiftType) {
                 data.push(shift);
+                if (i <= 3) {
+                    console.log('  ✅ 第', i + 1, '行資料有效');
+                }
             } else {
-                console.warn('第 ' + (i+1) + ' 行資料不完整,已略過');
+                console.warn('  ⚠️ 第', i + 1, '行資料不完整,已略過');
+                console.warn('    缺少欄位:');
+                if (!shift.employeeId) console.warn('      - 員工ID');
+                if (!shift.date) console.warn('      - 日期');
+                if (!shift.shiftType) console.warn('      - 班別');
             }
+        } else {
+            console.warn('  ⚠️ 第', i + 1, '行欄位不足');
+            console.warn('    需要: 至少 6 欄 (員工ID, 姓名, 日期, 班別, 開始, 結束)');
+            console.warn('    實際:', values.length, '欄');
+        }
+        
+        if (i === 3 && lines.length > 4) {
+            console.log('  ...(其餘行省略顯示)');
         }
     }
+    
+    console.log('');
+    console.log('═══════════════════════════════════════');
+    console.log('📊 解析完成');
+    console.log('有效資料筆數:', data.length);
+    console.log('無效/空白行數:', lines.length - 1 - data.length);
+    console.log('═══════════════════════════════════════');
+    console.log('');
     
     if (data.length === 0) {
         showMessage(t('SHIFT_BATCH_NO_DATA'), 'error');
@@ -995,6 +1041,7 @@ function parseCSVLine(line) {
     return values;
 }
 
+
 function displayBatchPreview(data) {
     const previewDiv = document.getElementById('batch-preview');
     const tableDiv = document.getElementById('preview-table');
@@ -1003,18 +1050,25 @@ function displayBatchPreview(data) {
     
     let html = '<table style="width: 100%; border-collapse: collapse;">';
     html += '<tr style="background: #f5f5f5;">';
-    html += '<th>員工ID</th><th>員工姓名</th><th>日期</th><th>班別</th><th>上班時間</th><th>下班時間</th><th>地點</th>';
+    // ✅ 修正：移除"排班ID"列
+    html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">員工ID</th>';
+    html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">員工姓名</th>';
+    html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">日期</th>';
+    html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">班別</th>';
+    html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">上班時間</th>';
+    html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">下班時間</th>';
+    html += '<th style="padding: 12px; border: 1px solid #ddd; text-align: left;">地點</th>';
     html += '</tr>';
     
-    data.slice(0, 10).forEach(row => {
+    data.slice(0, 10).forEach((row, index) => {
         html += '<tr style="border-bottom: 1px solid #eee;">';
-        html += `<td>${row.employeeId}</td>`;
-        html += `<td>${row.employeeName}</td>`;
-        html += `<td>${row.date}</td>`;
-        html += `<td>${row.shiftType}</td>`;
-        html += `<td>${row.startTime}</td>`;
-        html += `<td>${row.endTime}</td>`;
-        html += `<td>${row.location}</td>`;
+        html += `<td style="padding: 10px; border: 1px solid #ddd; font-size: 12px;">${row.employeeId}</td>`;
+        html += `<td style="padding: 10px; border: 1px solid #ddd;">${row.employeeName}</td>`;
+        html += `<td style="padding: 10px; border: 1px solid #ddd;">${row.date}</td>`;
+        html += `<td style="padding: 10px; border: 1px solid #ddd;">${row.shiftType}</td>`;
+        html += `<td style="padding: 10px; border: 1px solid #ddd;">${row.startTime}</td>`;
+        html += `<td style="padding: 10px; border: 1px solid #ddd;">${row.endTime}</td>`;
+        html += `<td style="padding: 10px; border: 1px solid #ddd;">${row.location}</td>`;
         html += '</tr>';
     });
     
@@ -1024,65 +1078,176 @@ function displayBatchPreview(data) {
     
     html += '</table>';
     
-    tableDiv.innerHTML = html;
+    let warningHtml = '';
+    if (data.length > 100) {
+        warningHtml = `
+            <div style="background: #fff3e0; border-left: 4px solid #ff9800; padding: 12px; margin: 16px 0; border-radius: 4px;">
+                <strong>⚠️ 數量提醒</strong><br>
+                您即將上傳 <strong>${data.length}</strong> 筆資料。<br>
+                建議單次上傳不超過 100 筆以避免超時。<br>
+                系統將自動分批上傳（每批 50 筆）。
+            </div>
+        `;
+    } else if (data.length > 50) {
+        warningHtml = `
+            <div style="background: #e3f2fd; border-left: 4px solid #2196f3; padding: 12px; margin: 16px 0; border-radius: 4px;">
+                <strong>ℹ️ 提示</strong><br>
+                您即將上傳 <strong>${data.length}</strong> 筆資料。<br>
+                系統將自動分批上傳以確保穩定性。
+            </div>
+        `;
+    }
+    
+    tableDiv.innerHTML = warningHtml + html;
     previewDiv.style.display = 'block';
     document.getElementById('upload-area').style.display = 'none';
+    
+    console.log('✅ 預覽表格已顯示，共', data.length, '筆資料');
 }
 
 async function confirmBatchUpload() {
     if (batchData.length === 0) return;
     
+    if (batchData.length > 200) {
+        showMessage('❌ 單次上傳不可超過 200 筆，請分批上傳', 'error');
+        return;
+    }
+    
+    if (batchData.length > 100) {
+        const confirm = window.confirm(
+            `⚠️ 您即將上傳 ${batchData.length} 筆資料\n\n` +
+            `建議單次上傳不超過 100 筆，以避免超時或失败。\n\n` +
+            `系統將自動分批上傳（每批 50 筆）\n\n` +
+            `是否繼續？`
+        );
+        if (!confirm) return;
+    }
+    
+    const BATCH_SIZE = 50; 
+    const totalBatches = Math.ceil(batchData.length / BATCH_SIZE);
+    
+    console.log('═══════════════════════════════════════');
+    console.log('📤 開始批量上傳');
+    console.log('═══════════════════════════════════════');
+    console.log('總資料筆數:', batchData.length);
+    console.log('分批數量:', totalBatches);
+    console.log('每批筆數:', BATCH_SIZE);
+    console.log('');
+    
+    let successCount = 0;
+    let failCount = 0;
+    const errors = [];
+    
     try {
         const token = localStorage.getItem('sessionToken');
         
-        console.log('📤 準備上傳批量資料:', batchData.length, '筆');
-        
-        // ⭐ 改用 GET 請求避免 CORS 問題
-        // 將資料轉成 JSON 字串並編碼
-        const shiftsJson = encodeURIComponent(JSON.stringify(batchData));
-        
-        const url = `${apiUrl}?action=batchAddShifts&token=${token}&shiftsArray=${shiftsJson}`;
-        
-        // 使用 JSONP 方式呼叫
-        const callbackName = 'batchUploadCallback_' + Date.now();
-        
-        return new Promise((resolve, reject) => {
-            // 建立回調函數
-            window[callbackName] = function(data) {
-                console.log('📥 批量上傳回應:', data);
+        for (let i = 0; i < totalBatches; i++) {
+            const start = i * BATCH_SIZE;
+            const end = Math.min(start + BATCH_SIZE, batchData.length);
+            const batch = batchData.slice(start, end);
+            
+            const currentBatch = i + 1;
+            const progressMsg = totalBatches > 1 
+                ? `📤 上傳第 ${currentBatch}/${totalBatches} 批 (第 ${start + 1}-${end} 筆)...`
+                : `📤 上傳中... (${batchData.length} 筆)`;
+            
+            showMessage(progressMsg, 'info');
+            
+            console.log(`───────────────────────────────────────`);
+            console.log(`📦 批次 ${currentBatch}/${totalBatches}`);
+            console.log(`   範圍: 第 ${start + 1} - ${end} 筆`);
+            console.log(`   筆數: ${batch.length}`);
+            
+            try {
+                const shiftsJson = encodeURIComponent(JSON.stringify(batch));
+                const url = `${apiUrl}?action=batchAddShifts&token=${token}&shiftsArray=${shiftsJson}`;
                 
-                // 清理
-                delete window[callbackName];
-                document.body.removeChild(script);
+                console.log(`   URL 長度: ${url.length} 字元`);
+                
+                if (url.length > 8000) {
+                    console.warn(`   ⚠️ URL 過長，建議減少每批數量`);
+                }
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                console.log(`   📥 回應:`, data);
                 
                 if (data.ok) {
-                    showMessage(data.msg || data.message || t('SHIFT_BATCH_UPLOAD_SUCCESS'), 'success');
-                    cancelBatchUpload();
-                    switchTab('view');
-                    loadShifts();
-                    resolve(data);
+                    const batchSuccess = data.results?.success || batch.length;
+                    const batchFail = data.results?.failed || 0;
+                    
+                    successCount += batchSuccess;
+                    failCount += batchFail;
+                    
+                    console.log(`   ✅ 成功: ${batchSuccess} 筆`);
+                    if (batchFail > 0) {
+                        console.log(`   ❌ 失敗: ${batchFail} 筆`);
+                        if (data.results?.errors) {
+                            errors.push(...data.results.errors);
+                        }
+                    }
                 } else {
-                    showMessage(data.msg || data.message || t('SHIFT_BATCH_UPLOAD_FAILED'), 'error');
-                    reject(new Error(data.msg));
+                    failCount += batch.length;
+                    const errorMsg = `批次 ${currentBatch}: ${data.msg || '未知錯誤'}`;
+                    errors.push(errorMsg);
+                    console.error(`   ❌ 批次失敗:`, data.msg);
                 }
-            };
-            
-            // 建立 script 標籤
-            const script = document.createElement('script');
-            script.src = url + `&callback=${callbackName}`;
-            script.onerror = function() {
-                console.error('❌ 批量上傳失敗: 無法載入腳本');
-                delete window[callbackName];
-                document.body.removeChild(script);
-                showMessage(t('SHIFT_BATCH_NETWORK_ERROR'), 'error');
-                reject(new Error('Network error'));
-            };
-            
-            document.body.appendChild(script);
-        });
+                
+                if (i < totalBatches - 1) {
+                    console.log(`   ⏱️ 等待 1 秒...`);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+                
+            } catch (error) {
+                failCount += batch.length;
+                const errorMsg = `批次 ${currentBatch}: ${error.message}`;
+                errors.push(errorMsg);
+                console.error(`   ❌ 批次錯誤:`, error);
+            }
+        }
+        
+        console.log('');
+        console.log('═══════════════════════════════════════');
+        console.log('📊 上傳完成');
+        console.log('═══════════════════════════════════════');
+        console.log('✅ 成功:', successCount, '筆');
+        console.log('❌ 失敗:', failCount, '筆');
+        
+        if (errors.length > 0) {
+            console.log('');
+            console.log('錯誤詳情:');
+            errors.forEach((err, index) => {
+                console.log(`  ${index + 1}. ${err}`);
+            });
+        }
+        console.log('═══════════════════════════════════════');
+        
+        let resultMsg = `✅ 批量上傳完成！\n\n`;
+        resultMsg += `成功: ${successCount} 筆\n`;
+        if (failCount > 0) {
+            resultMsg += `失敗: ${failCount} 筆\n`;
+            if (errors.length > 0 && errors.length <= 5) {
+                resultMsg += `\n錯誤:\n${errors.slice(0, 5).join('\n')}`;
+            }
+        }
+        
+        showMessage(resultMsg, failCount > 0 ? 'warning' : 'success');
+        
+        cancelBatchUpload();
+        
+        setTimeout(() => {
+            switchTab('view');
+            loadShifts();
+        }, 1500);
         
     } catch (error) {
-        console.error('❌ 批量上傳失敗:', error);
+        console.error('');
+        console.error('❌❌❌ 批量上傳失敗');
+        console.error('錯誤訊息:', error.message);
+        console.error('錯誤堆疊:', error.stack);
+        console.error('═══════════════════════════════════════');
+        
         showMessage(t('SHIFT_BATCH_UPLOAD_ERROR') + ': ' + error.message, 'error');
     }
 }
@@ -1099,11 +1264,21 @@ function cancelBatchUpload() {
 }
 
 function downloadTemplate() {
+    // ✅ 修正：格式为「員工ID, 員工姓名, 日期, 班別, 上班時間, 下班時間, 地點, 備註」
     const template = '員工ID,員工姓名,日期,班別,上班時間,下班時間,地點,備註\n' +
-                    'EMP001,張三,2025-10-25,早班,08:00,16:00,總公司,\n' +
-                    'EMP002,李四,2025-10-25,中班,12:00,20:00,分公司,';
+                    'U1771fd65da16e2f2000a3c3805fbe256,洪培瑜Eric,2026-01-25,早班,08:00,16:00,總公司,\n' +
+                    'U1771fd65da16e2f2000a3c3805fbe256,洪培瑜Eric,2026-01-26,中班,12:00,20:00,分公司,\n' +
+                    'EMP001,張三,2026-01-27,晚班,16:00,00:00,總公司,跨日班\n' +
+                    'EMP002,李四,2026-01-28,全日班,09:00,18:00,分公司,\n' +
+                    'EMP003,王五,2026-01-29,排休,00:00,00:00,總公司,休假日';
     
     downloadCSV(template, '排班範本.csv');
+    
+    console.log('✅ 範本檔案已下載');
+    console.log('   格式: 員工ID, 員工姓名, 日期, 班別, 上班時間, 下班時間, 地點, 備註');
+    console.log('   建議: 單次上傳不超過 100 筆，最多 200 筆');
+    
+    showMessage('✅ 範本下載成功！請依照範本格式填寫資料\n💡 建議單次上傳不超過 100 筆', 'success');
 }
 
 // ========== 月曆功能 ==========
