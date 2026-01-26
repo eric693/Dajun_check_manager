@@ -1575,7 +1575,39 @@
                             </p>
                         </div>
                     </div>
-
+                    
+                    <!-- 當月工作日誌統計 -->
+                    <div class="card p-6 mt-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-1">
+                                    當月工作日誌統計
+                                </h2>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    查看本月所有員工的工作日誌填寫狀況
+                                </p>
+                            </div>
+                            <button onclick="loadWorklogMonthlyStats()" 
+                                    class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors">
+                                🔄 重新整理
+                            </button>
+                        </div>
+                        
+                        <div id="worklog-monthly-stats-container">
+                            <div id="worklog-stats-loading" 
+                                class="text-center text-gray-500 dark:text-gray-400 py-4">
+                                正在載入統計資料...
+                            </div>
+                            <div id="worklog-stats-empty" 
+                                class="text-center text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg" 
+                                style="display: none;">
+                                <p class="font-semibold">
+                                    本月尚無工作日誌記錄
+                                </p>
+                            </div>
+                            <div id="worklog-stats-list"></div>
+                        </div>
+                    </div>
                     <!-- 管理員頁面中加入工作日誌審核區塊 -->
                     <div class="card p-6 mt-6">
                         <h2 data-i18n="WORKLOG_PENDING_TITLE" 
