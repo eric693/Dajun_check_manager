@@ -1192,6 +1192,7 @@ function updateEmployeeCount() {
 }
 
 // ==================== 批量提交工作日誌 ====================
+// ==================== 批量提交工作日誌 ====================
 async function batchSubmitWorklogs() {
     console.log('📤 開始批量提交工作日誌');
     console.log('═══════════════════════════════════════');
@@ -1323,21 +1324,27 @@ async function batchSubmitWorklogs() {
                 `;
             }
             
-            const params = new URLSearchParams({
-                targetUserId: log.employeeId,
-                targetUserName: log.employeeName,
-                targetUserDept: log.employeeDept,
-                date: log.date,
-                weather: log.weather,
-                location: log.location,
-                serialNumber: log.serialNumber,
-                hours: log.hours,
-                content: log.content,
-                note: log.note
-            });
-            
+            // ⭐ 修正：正確建立查詢字串
             try {
-                const res = await callApifetch(`submitWorklog&${params.toString()}`);
+                const params = {
+                    targetUserId: log.employeeId,
+                    targetUserName: log.employeeName,
+                    targetUserDept: log.employeeDept,
+                    date: log.date,
+                    weather: log.weather,
+                    location: log.location,
+                    serialNumber: log.serialNumber,
+                    hours: log.hours,
+                    content: log.content,
+                    note: log.note
+                };
+                
+                // 建立查詢字串
+                const queryString = Object.entries(params)
+                    .map(([key, value]) => `${key}=${encodeURIComponent(value || '')}`)
+                    .join('&');
+                
+                const res = await callApifetch(`submitWorklog&${queryString}`);
                 
                 if (res.ok) {
                     successCount++;
@@ -1411,7 +1418,6 @@ async function batchSubmitWorklogs() {
         updateEmployeeCount();
     }
 }
-
 // ==================== 快捷功能：複製上一筆記錄 ====================
 function duplicateLastWorklogRow() {
     const container = document.getElementById('worklog-employees-container');
