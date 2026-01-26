@@ -24,29 +24,15 @@ async function initWorklogTab() {
     console.log('📝 初始化工作日誌標籤（批量模式）');
     console.log('═══════════════════════════════════════');
     
-    // ⭐⭐⭐ 關鍵：確保先載入員工列表
+    // Step 1: 載入員工列表
     console.log('📡 Step 1: 載入員工列表');
     await loadAllEmployees();
     
-    console.log('📊 員工列表載入結果:');
-    console.log('   數量: ' + (allEmployeesList ? allEmployeesList.length : 0));
+    // Step 2: 載入已提交的工作日誌記錄
+    console.log('📡 Step 2: 載入工作日誌記錄');
+    await loadWorklogRecords();
     
-    if (!allEmployeesList || allEmployeesList.length === 0) {
-        console.warn('⚠️ 員工列表為空，批量提交可能會失敗');
-        showNotification('⚠️ 員工列表載入失敗，請重新整理頁面', 'warning');
-    } else {
-        console.log('✅ 員工列表載入成功');
-        // 顯示前 3 位員工
-        console.log('📋 前 3 位員工:');
-        allEmployeesList.slice(0, 3).forEach((emp, index) => {
-            console.log(`   ${index + 1}. ${emp.name} (${emp.userId}) - ${emp.dept}`);
-        });
-    }
-    
-    console.log('');
-    // console.log('📡 Step 2: 初始化日期選擇器');
-    // initializeDatePicker();
-    
+    // Step 3: 新增第一行員工日誌欄位
     console.log('📡 Step 3: 新增第一行員工日誌欄位');
     addEmployeeWorklogRow();
     
@@ -1278,14 +1264,13 @@ async function batchSubmitWorklogs() {
         
         console.log(`\n📝 處理日誌 #${index + 1}:`);
         
-        // ⭐⭐⭐ 取得表單數據
+        // 取得表單數據
         const employeeId = row.querySelector('.employee-select')?.value;
         const serialNumber = row.querySelector('.serial-number-input')?.value;
         const hours = row.querySelector('.hours-input')?.value;
         const content = row.querySelector('.content-textarea')?.value;
         const note = row.querySelector('.note-textarea')?.value;
         
-        // ⭐⭐⭐ 詳細 log
         console.log(`   員工ID: "${employeeId}"`);
         console.log(`   編號: ${serialNumber}`);
         console.log(`   時數: ${hours}`);
@@ -1304,7 +1289,7 @@ async function batchSubmitWorklogs() {
         
         console.log(`   ✅ 找到員工: ${employee.name}`);
         
-        // ⭐⭐⭐ 驗證必填欄位（詳細檢查）
+        // 驗證必填欄位
         if (!hours) {
             console.error(`   ❌ 缺少工作時數`);
             showNotification(`日誌 #${index + 1}：請填寫工作時數`, 'error');
@@ -1324,12 +1309,11 @@ async function batchSubmitWorklogs() {
         }
         
         console.log(`   ✅ 欄位驗證通過`);
-        
-        // 提交
         console.log(`   📡 提交中...`);
         
         try {
-            const result = await callApifetch('submitWorklog', {
+            // ⭐⭐⭐ 關鍵修正：改用 URLSearchParams 傳遞參數
+            const params = new URLSearchParams({
                 targetUserId: employee.userId,
                 targetUserName: employee.name,
                 targetUserDept: employee.dept || '未分配',
@@ -1341,6 +1325,8 @@ async function batchSubmitWorklogs() {
                 content: content.trim(),
                 note: note ? note.trim() : ''
             });
+            
+            const result = await callApifetch(`submitWorklog&${params.toString()}`);
             
             console.log(`   📤 API 回應:`, result);
             

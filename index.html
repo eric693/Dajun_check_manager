@@ -971,6 +971,27 @@
                             批量提交工作日誌 (<span id="submit-count">0</span> 筆)
                         </button>
                     </div>
+
+                    <!-- 📋 我的工作日誌記錄（所有人都能看） -->
+                    <div class="card p-6">
+                        <h2>📋 我的工作日誌</h2>
+                        <p>查看已提交的工作日誌與審核狀態</p>
+                        
+                        <div id="worklog-records-container">
+                            <div id="worklog-records-loading" 
+                                class="text-center text-gray-500 dark:text-gray-400 py-4">
+                                正在載入記錄...
+                            </div>
+                            <div id="worklog-records-empty" 
+                                class="text-center text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg" 
+                                style="display: none;">
+                                <p class="font-semibold">
+                                    目前沒有工作日誌記錄
+                                </p>
+                            </div>
+                            <ul id="worklog-records-list" class="space-y-3"></ul>
+                        </div>
+                    </div>
                     
                 </section>
                 <!-- 入職切結書頁面 -->
