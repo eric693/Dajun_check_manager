@@ -16,53 +16,42 @@ let allEmployeesList = [];       // 所有員工列表
 //     await loadWorklogRecords();
 //     setupWorklogForm();
 // }
+/**
+ * ✅ 初始化工作日誌標籤（批量模式）
+ */
 async function initWorklogTab() {
+    console.log('═══════════════════════════════════════');
     console.log('📝 初始化工作日誌標籤（批量模式）');
+    console.log('═══════════════════════════════════════');
     
-    // 顯示當前登入者
-    const currentUser = localStorage.getItem('sessionUserName') || '未知使用者';
-    const userRole = localStorage.getItem('sessionUserDept') || '員工';
-    const userDisplay = `${currentUser} (${userRole})`;
-    
-    const currentUserEl = document.getElementById('worklog-current-user');
-    if (currentUserEl) {
-        currentUserEl.textContent = userDisplay;
-    }
-    
-    // 載入員工列表（用於下拉選單）
+    // ⭐⭐⭐ 關鍵：確保先載入員工列表
+    console.log('📡 Step 1: 載入員工列表');
     await loadAllEmployees();
     
-    // 設定今天的日期為預設值
-    const dateInput = document.getElementById('worklog-common-date');
-    if (dateInput) {
-        const today = new Date().toISOString().split('T')[0];
-        dateInput.value = today;
+    console.log('📊 員工列表載入結果:');
+    console.log('   數量: ' + (allEmployeesList ? allEmployeesList.length : 0));
+    
+    if (!allEmployeesList || allEmployeesList.length === 0) {
+        console.warn('⚠️ 員工列表為空，批量提交可能會失敗');
+        showNotification('⚠️ 員工列表載入失敗，請重新整理頁面', 'warning');
+    } else {
+        console.log('✅ 員工列表載入成功');
+        // 顯示前 3 位員工
+        console.log('📋 前 3 位員工:');
+        allEmployeesList.slice(0, 3).forEach((emp, index) => {
+            console.log(`   ${index + 1}. ${emp.name} (${emp.userId}) - ${emp.dept}`);
+        });
     }
     
-    // ⭐ 修正：移除舊的監聽器再綁定
-    const addBtn = document.getElementById('add-employee-worklog-btn');
-    if (addBtn) {
-        // 移除舊的監聽器
-        const newAddBtn = addBtn.cloneNode(true);
-        addBtn.parentNode.replaceChild(newAddBtn, addBtn);
-        // 綁定新的監聽器
-        newAddBtn.addEventListener('click', addEmployeeWorklogRow);
-    }
+    console.log('');
+    console.log('📡 Step 2: 初始化日期選擇器');
+    initializeDatePicker();
     
-    // ⭐ 修正：移除舊的監聽器再綁定
-    const submitBtn = document.getElementById('batch-submit-worklog-btn');
-    if (submitBtn) {
-        // 移除舊的監聽器
-        const newSubmitBtn = submitBtn.cloneNode(true);
-        submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
-        // 綁定新的監聽器
-        newSubmitBtn.addEventListener('click', batchSubmitWorklogs);
-    }
-    
-    // 預設新增一個員工行（方便快速開始）
+    console.log('📡 Step 3: 新增第一行員工日誌欄位');
     addEmployeeWorklogRow();
     
     console.log('✅ 工作日誌標籤初始化完成');
+    console.log('═══════════════════════════════════════');
 }
 
 /**
@@ -989,26 +978,84 @@ async function loadWorklogExportEmployees() {
 }
 
 // ==================== 載入所有員工列表 ====================
+/**
+ * ✅ 載入所有員工列表（增強版）
+ */
 async function loadAllEmployees() {
     try {
-        console.log('📋 載入員工列表...');
+        console.log('═══════════════════════════════════════');
+        console.log('📋 loadAllEmployees 開始');
+        console.log('═══════════════════════════════════════');
         
+        console.log('📡 呼叫 API: getAllUsers');
         const res = await callApifetch('getAllUsers');
         
-        if (res.ok && res.users) {
-            allEmployeesList = res.users;
-            console.log(`✅ 載入 ${allEmployeesList.length} 位員工`);
-        } else {
-            console.warn('⚠️ 載入員工列表失敗');
+        console.log('');
+        console.log('📤 API 回應:');
+        console.log('   ok: ' + res.ok);
+        console.log('   msg: ' + (res.msg || '無'));
+        console.log('   users: ' + (res.users ? res.users.length + ' 筆' : '無'));
+        
+        // ⭐⭐⭐ 關鍵：檢查回應格式
+        if (!res) {
+            console.error('❌ API 回應為 null 或 undefined');
             allEmployeesList = [];
+            return false;
         }
         
+        if (!res.ok) {
+            console.error('❌ API 回應 ok = false');
+            console.error('   原因: ' + res.msg);
+            allEmployeesList = [];
+            return false;
+        }
+        
+        if (!res.users) {
+            console.error('❌ API 回應沒有 users 欄位');
+            console.error('   完整回應: ' + JSON.stringify(res));
+            allEmployeesList = [];
+            return false;
+        }
+        
+        if (!Array.isArray(res.users)) {
+            console.error('❌ res.users 不是陣列');
+            console.error('   型別: ' + typeof res.users);
+            allEmployeesList = [];
+            return false;
+        }
+        
+        if (res.users.length === 0) {
+            console.warn('⚠️ res.users 是空陣列');
+            allEmployeesList = [];
+            return false;
+        }
+        
+        // ✅ 一切正常，載入員工列表
+        allEmployeesList = res.users;
+        
+        console.log('');
+        console.log('✅ 員工列表載入成功');
+        console.log('   總數: ' + allEmployeesList.length);
+        console.log('');
+        console.log('📋 前 5 位員工:');
+        allEmployeesList.slice(0, 5).forEach((emp, index) => {
+            console.log(`   ${index + 1}. ${emp.name} (${emp.userId}) - ${emp.dept}`);
+        });
+        
+        console.log('═══════════════════════════════════════');
+        return true;
+        
     } catch (error) {
-        console.error('❌ 載入員工列表錯誤:', error);
+        console.error('');
+        console.error('❌❌❌ loadAllEmployees 發生錯誤');
+        console.error('錯誤訊息: ' + error.message);
+        console.error('錯誤堆疊: ' + error.stack);
+        console.error('═══════════════════════════════════════');
+        
         allEmployeesList = [];
+        return false;
     }
 }
-
 // ==================== 新增員工工作記錄行 ====================
 function addEmployeeWorklogRow() {
     worklogEmployeeCounter++;
@@ -1200,254 +1247,142 @@ function updateEmployeeCount() {
 }
 
 // ==================== 批量提交工作日誌 ====================
+/**
+ * ✅ 批量提交工作日誌（增強版）
+ */
 async function batchSubmitWorklogs() {
-    console.log('📤 開始批量提交工作日誌');
+    console.log('═══════════════════════════════════════');
+    console.log('📝 批量提交工作日誌');
     console.log('═══════════════════════════════════════');
     
-    // 取得共用資訊
-    const commonDate = document.getElementById('worklog-common-date')?.value;
-    const commonWeather = document.getElementById('worklog-common-weather')?.value;
-    const commonLocation = document.getElementById('worklog-common-location')?.value.trim();
+    const rows = document.querySelectorAll('.employee-worklog-row');
     
-    console.log('📅 共用資訊:');
-    console.log('   日期: ' + commonDate);
-    console.log('   天氣: ' + commonWeather);
-    console.log('   地點: ' + commonLocation);
+    console.log('📊 基本資訊:');
+    console.log('   日誌行數: ' + rows.length);
+    console.log('   員工列表數量: ' + (allEmployeesList ? allEmployeesList.length : 0));
     console.log('');
     
-    // 驗證共用資訊
-    if (!commonDate) {
-        showNotification('請選擇工作日期', 'error');
-        return;
-    }
-    
-    if (!commonWeather) {
-        showNotification('請選擇天氣', 'error');
-        return;
-    }
-    
-    if (!commonLocation) {
-        showNotification('請填寫工作地點', 'error');
-        return;
-    }
-    
-    // 收集所有員工記錄
-    const container = document.getElementById('worklog-employees-container');
-    if (!container || container.children.length === 0) {
-        showNotification('請至少新增一位員工的工作記錄', 'error');
-        return;
-    }
-    
-    const worklogs = [];
-    const cards = container.querySelectorAll('[id^="worklog-employee-"]');
-    
-    console.log(`📋 收集 ${cards.length} 筆員工記錄...`);
-    console.log('');
-    
-    for (let i = 0; i < cards.length; i++) {
-        const card = cards[i];
-        const index = card.dataset.index;
+    // ⭐⭐⭐ 關鍵：在提交前檢查員工列表
+    if (!allEmployeesList || allEmployeesList.length === 0) {
+        console.error('❌ 員工列表為空！');
+        console.log('');
+        console.log('🔄 嘗試重新載入員工列表...');
         
-        const employeeSelect = document.getElementById(`worklog-employee-${index}`);
-        const serialInput = document.getElementById(`worklog-serial-${index}`);
-        const hoursInput = document.getElementById(`worklog-hours-${index}`);
-        const contentInput = document.getElementById(`worklog-content-${index}`);
-        const noteInput = document.getElementById(`worklog-note-${index}`);
+        const loaded = await loadAllEmployees();
         
-        // ⭐ 修正：直接從 allEmployeesList 查詢員工資訊
-        const employeeId = employeeSelect?.value;
-        
-        if (!employeeId) {
-            showNotification(`日誌 #${index}：請選擇員工`, 'error');
+        if (!loaded || !allEmployeesList || allEmployeesList.length === 0) {
+            console.error('❌ 重新載入失敗');
+            showNotification('❌ 無法載入員工列表，請重新整理頁面', 'error');
+            console.log('═══════════════════════════════════════');
             return;
         }
         
-        console.log('🔍 查詢員工ID:', employeeId);
-        console.log('📋 員工列表:', allEmployeesList);
+        console.log('✅ 重新載入成功');
+    }
+    
+    console.log('📋 員工列表狀態:');
+    console.log('   總數: ' + allEmployeesList.length);
+    allEmployeesList.slice(0, 3).forEach((emp, index) => {
+        console.log(`   ${index + 1}. ${emp.name} (${emp.userId})`);
+    });
+    console.log('');
+    
+    // ⭐ 開始處理每一行
+    for (let index = 0; index < rows.length; index++) {
+        const row = rows[index];
         
-        // ⭐ 關鍵：直接從全局列表中查找員工資料
-        const employee = allEmployeesList.find(emp => emp.userId === employeeId);
+        console.log(`📝 處理日誌 #${index + 1}:`);
+        
+        const employeeId = row.querySelector('.employee-select').value;
+        const date = row.querySelector('.date-input').value;
+        const weather = row.querySelector('.weather-select').value;
+        const location = row.querySelector('.location-input').value;
+        const serialNumber = row.querySelector('.serial-number-input').value;
+        const hours = row.querySelector('.hours-input').value;
+        const content = row.querySelector('.content-textarea').value;
+        const note = row.querySelector('.note-textarea').value;
+        
+        console.log(`   選擇的 employeeId: "${employeeId}"`);
+        console.log(`   日期: ${date}`);
+        console.log(`   天氣: ${weather}`);
+        console.log(`   地點: ${location}`);
+        
+        // ⭐⭐⭐ 關鍵：詳細的員工查找過程
+        console.log(`   🔍 開始查找員工...`);
+        
+        const employee = allEmployeesList.find(emp => {
+            const match = emp.userId === employeeId;
+            if (index === 0) {  // 只在第一筆顯示比對過程
+                console.log(`      - 比對 ${emp.name}: "${emp.userId}" === "${employeeId}" ? ${match}`);
+            }
+            return match;
+        });
         
         if (!employee) {
-            console.error('❌ 找不到員工資料:', employeeId);
-            showNotification(`日誌 #${index}：找不到員工資料`, 'error');
+            console.error(`   ❌ 找不到員工！`);
+            console.error(`   - employeeId: "${employeeId}"`);
+            console.error(`   - 可用的 userId:`, allEmployeesList.map(e => e.userId));
+            showNotification(`日誌 #${index + 1}：找不到員工資料`, 'error');
+            console.log('═══════════════════════════════════════');
             return;
         }
         
-        const employeeName = employee.name || '';
-        const employeeDept = employee.dept || '';
+        console.log(`   ✅ 找到員工: ${employee.name} (${employee.userId})`);
         
-        console.log('✅ 找到員工:', { employeeName, employeeDept });
-        // 取得員工資訊
-        // const selectedOption = employeeSelect?.options[employeeSelect.selectedIndex];
-        // const employeeId = employeeSelect?.value;
-        // const employeeName = selectedOption?.dataset.name || '';
-        // const employeeDept = selectedOption?.dataset.dept || '';
-        
-        const serialNumber = serialInput?.value || '';
-        const hours = parseFloat(hoursInput?.value);
-        const content = contentInput?.value.trim();
-        const note = noteInput?.value.trim() || '';
-        
-        console.log(`📄 日誌 #${index}:`);
-        console.log(`   員工: ${employeeName} (${employeeDept})`);
-        console.log(`   編號: ${serialNumber || '無'}`);
-        console.log(`   時數: ${hours}`);
-        console.log(`   內容長度: ${content.length} 字`);
-        console.log('');
-        
-        // 驗證該員工的記錄
-        if (!employeeId) {
-            showNotification(`日誌 #${index}：請選擇員工`, 'error');
+        // 驗證必填欄位
+        if (!date || !weather || !location || !hours || !content) {
+            console.error(`   ❌ 缺少必填欄位`);
+            showNotification(`日誌 #${index + 1}：請填寫所有必填欄位`, 'error');
+            console.log('═══════════════════════════════════════');
             return;
         }
         
-        if (!hours || hours <= 0) {
-            showNotification(`日誌 #${index} (${employeeName})：請輸入工作時數`, 'error');
-            return;
-        }
+        console.log(`   📡 提交工作日誌...`);
         
-        if (!content || content.length < 10) {
-            showNotification(`日誌 #${index} (${employeeName})：工作內容至少需要 10 個字`, 'error');
-            return;
-        }
-        
-        // 加入陣列
-        worklogs.push({
-            employeeId: employeeId,
-            employeeName: employeeName,
-            employeeDept: employeeDept,
-            date: commonDate,
-            weather: commonWeather,
-            location: commonLocation,
-            serialNumber: serialNumber,
-            hours: hours,
-            content: content,
-            note: note
-        });
-    }
-    
-    console.log(`✅ 驗證通過，準備提交 ${worklogs.length} 筆工作日誌`);
-    console.log('═══════════════════════════════════════');
-    console.log('');
-    
-    // 顯示載入狀態
-    const submitBtn = document.getElementById('batch-submit-worklog-btn');
-    const originalHTML = submitBtn?.innerHTML;
-    generalButtonState(submitBtn, 'processing', `提交中... (0/${worklogs.length})`);
-    
-    try {
-        let successCount = 0;
-        let failCount = 0;
-        const failedLogs = [];
-        
-        // 逐筆提交
-        for (let i = 0; i < worklogs.length; i++) {
-            const log = worklogs[i];
-            
-            console.log(`[${i + 1}/${worklogs.length}] 提交 ${log.employeeName} 的工作日誌...`);
-            
-            // 更新進度
-            if (submitBtn) {
-                submitBtn.innerHTML = `
-                    <span class="inline-block animate-spin mr-2">⏳</span>
-                    提交中... (${i + 1}/${worklogs.length})
-                `;
-            }
-            
-            // ⭐ 修正：正確建立查詢字串
-            try {
-                const params = {
-                    targetUserId: log.employeeId,
-                    targetUserName: log.employeeName,
-                    targetUserDept: log.employeeDept,
-                    date: log.date,
-                    weather: log.weather,
-                    location: log.location,
-                    serialNumber: log.serialNumber,
-                    hours: log.hours,
-                    content: log.content,
-                    note: log.note
-                };
-                
-                // 建立查詢字串
-                const queryString = Object.entries(params)
-                    .map(([key, value]) => `${key}=${encodeURIComponent(value || '')}`)
-                    .join('&');
-                
-                const res = await callApifetch(`submitWorklog&${queryString}`);
-                
-                if (res.ok) {
-                    successCount++;
-                    console.log(`   ✅ 成功`);
-                } else {
-                    failCount++;
-                    failedLogs.push({ name: log.employeeName, reason: res.msg });
-                    console.error(`   ❌ 失敗: ${res.msg}`);
-                }
-                
-            } catch (error) {
-                failCount++;
-                failedLogs.push({ name: log.employeeName, reason: error.message });
-                console.error(`   ❌ 錯誤:`, error);
-            }
-            
-            // 避免請求過快
-            await new Promise(resolve => setTimeout(resolve, 200));
-        }
-        
-        console.log('');
-        console.log('═══════════════════════════════════════');
-        console.log('📊 提交結果統計:');
-        console.log(`   成功: ${successCount} 筆`);
-        console.log(`   失敗: ${failCount} 筆`);
-        console.log('═══════════════════════════════════════');
-        
-        // 顯示結果
-        if (failCount === 0) {
-            showNotification(`✅ 成功提交 ${successCount} 筆工作日誌！`, 'success');
-            
-            // 清空表單
-            container.innerHTML = '';
-            worklogEmployeeCounter = 0;
-            
-            // 重置共用欄位
-            document.getElementById('worklog-common-weather').value = '';
-            document.getElementById('worklog-common-location').value = '';
-            
-            // 顯示空狀態
-            const emptyState = document.getElementById('worklog-empty-state');
-            if (emptyState) {
-                emptyState.style.display = 'block';
-            }
-            if (submitBtn) {
-                submitBtn.style.display = 'none';
-            }
-            
-            updateEmployeeCount();
-            
-        } else {
-            let errorMsg = `⚠️ 完成提交：成功 ${successCount} 筆，失敗 ${failCount} 筆\n\n失敗的記錄：\n`;
-            failedLogs.forEach(log => {
-                errorMsg += `• ${log.name}: ${log.reason}\n`;
+        try {
+            const result = await callApifetch('submitWorklog', {
+                targetUserId: employee.userId,
+                targetUserName: employee.name,
+                targetUserDept: employee.dept || '未分配',
+                date: date,
+                weather: weather,
+                location: location,
+                serialNumber: serialNumber,
+                hours: hours,
+                content: content,
+                note: note
             });
             
-            showNotification(errorMsg, 'warning');
+            console.log(`   📤 提交結果:`, result);
             
-            // 不清空表單，讓使用者可以修改後重試
+            if (result.ok) {
+                console.log(`   ✅ 日誌 #${index + 1} 提交成功`);
+            } else {
+                console.error(`   ❌ 日誌 #${index + 1} 提交失敗:`, result.msg);
+                showNotification(`日誌 #${index + 1}：${result.msg}`, 'error');
+                console.log('═══════════════════════════════════════');
+                return;
+            }
+            
+        } catch (error) {
+            console.error(`   ❌ 日誌 #${index + 1} 提交異常:`, error);
+            showNotification(`日誌 #${index + 1}：提交失敗`, 'error');
+            console.log('═══════════════════════════════════════');
+            return;
         }
         
-    } catch (error) {
-        console.error('❌ 批量提交錯誤:', error);
-        showNotification('批量提交失敗：' + error.message, 'error');
-        
-    } finally {
-        generalButtonState(submitBtn, 'idle');
-        if (submitBtn && originalHTML) {
-            submitBtn.innerHTML = originalHTML;
-        }
-        updateEmployeeCount();
+        console.log('');
     }
+    
+    console.log('✅✅✅ 批量提交完成！');
+    console.log('   成功提交: ' + rows.length + ' 筆');
+    console.log('═══════════════════════════════════════');
+    
+    showNotification('✅ 批量提交成功！', 'success');
+    
+    // 清空表單
+    document.getElementById('employeeWorklogsContainer').innerHTML = '';
+    addEmployeeWorklogRow();
 }
 // ==================== 快捷功能：複製上一筆記錄 ====================
 function duplicateLastWorklogRow() {
