@@ -507,7 +507,10 @@ function setupAgreementCheckboxes() {
         'agree-confidentiality',
         'agree-non-compete',
         'agree-ip-rights',
-        'agree-liability'
+        'agree-liability',
+        'agree-probation',      // ⭐ 新增
+        'agree-equipment',      // ⭐ 新增
+        'agree-safety'          // ⭐ 新增
     ];
     
     const submitBtn = document.getElementById('submit-onboarding-btn');

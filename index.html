@@ -1027,18 +1027,55 @@
                                 
                                 <p>茲因本人受僱於 <strong>貴公司</strong>，為保護公司之營業秘密及智慧財產權，特立此切結書，並承諾遵守以下事項：</p>
                                 
-                                <div class="ml-6 space-y-3">
-                                    <p><strong>一、保密義務</strong></p>
-                                    <p class="ml-4">本人於任職期間及離職後，對於在職期間所知悉或持有之公司機密資訊，包括但不限於：客戶名單、商業計畫、技術資料、財務資訊等，應負保密義務，不得洩漏或供他人使用。</p>
+                                <div class="ml-6 space-y-4">
+                                    <!-- 原有條款 -->
+                                    <div>
+                                        <p><strong>一、保密義務</strong></p>
+                                        <p class="ml-4">本人於任職期間及離職後，對於在職期間所知悉或持有之公司機密資訊，包括但不限於：客戶名單、商業計畫、技術資料、財務資訊等，應負保密義務，不得洩漏或供他人使用。</p>
+                                    </div>
                                     
-                                    <p><strong>二、競業禁止</strong></p>
-                                    <p class="ml-4">本人離職後 <strong>一年內</strong>，不得從事與公司相同或類似之業務，亦不得受僱於與公司有競爭關係之企業。</p>
+                                    <div>
+                                        <p><strong>二、競業禁止</strong></p>
+                                        <p class="ml-4">本人離職後 <strong>一年內</strong>，不得從事與公司相同或類似之業務，亦不得受僱於與公司有競爭關係之企業。</p>
+                                    </div>
                                     
-                                    <p><strong>三、智慧財產權歸屬</strong></p>
-                                    <p class="ml-4">本人於任職期間所完成之職務上著作、發明、創作等智慧財產權，其著作權及專利權歸公司所有。</p>
+                                    <div>
+                                        <p><strong>三、智慧財產權歸屬</strong></p>
+                                        <p class="ml-4">本人於任職期間所完成之職務上著作、發明、創作等智慧財產權，其著作權及專利權歸公司所有。</p>
+                                    </div>
                                     
-                                    <p><strong>四、違約責任</strong></p>
-                                    <p class="ml-4">如本人違反上述約定，願負一切法律責任，並賠償公司因此所受之損害。</p>
+                                    <div>
+                                        <p><strong>四、違約責任</strong></p>
+                                        <p class="ml-4">如本人違反上述約定，願負一切法律責任，並賠償公司因此所受之損害。</p>
+                                    </div>
+                                    
+                                    <!-- ⭐ 新增條款 -->
+                                    <div>
+                                        <p><strong>五、試用期間條款</strong></p>
+                                        <div class="ml-4 space-y-2">
+                                            <p>1. 本人之試用期間為三個月。</p>
+                                            <p>2. 本人在試用期間內，如自認無法勝任本職務或因志趣不合，得主動提出離職申請。</p>
+                                            <p>3. 試用期間內，如公司認為本人不適任職務或表現不符期待，公司得隨時終止試用關係，本人不得異議。</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <p><strong>六、工具領用與保管責任</strong></p>
+                                        <div class="ml-4 space-y-2">
+                                            <p>1. 本人同意在入職後，正式上工之前購齊公司提供之個人標準配備清單。</p>
+                                            <p>2. 本人同意在任職期間，若所領用之工具因本人使用不慎而發生遺失、損毀或無法修復之情形，本人同意依公司所定之價格或市價照價賠償。</p>
+                                            <p>3. 本人同意於離職時，應將除自費之裝備外，公司所提供之一切工具完整歸還。倘有缺件、非正常使用之磨損或遺失者，本人願依規定負責賠償，確認無誤後方得正式離職。</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <p><strong>七、其他注意事項</strong></p>
+                                        <div class="ml-4 space-y-2">
+                                            <p>1. 本切結書自本人簽署之日起生效。</p>
+                                            <p>2. 本人已充分理解並同意本切結書所有內容，絕無任何疑義。</p>
+                                            <p>3. 本人同意公司估算本書面所提之費用相關內容，也願意遵守工地相關安全規定，例如：工地內不能飲酒、配戴安全帽。如衍生出相關罰款費用或毀損費用可預先從薪餉支出。</p>
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <p class="mt-6"><strong>此致</strong></p>
@@ -1083,6 +1120,34 @@
                                     我已詳細閱讀並同意 <strong>違約責任條款</strong>
                                 </span>
                             </label>
+                            
+                            <!-- ⭐ 新增勾選項 -->
+                            <label class="flex items-start space-x-3 cursor-pointer">
+                                <input type="checkbox" 
+                                    id="agree-probation" 
+                                    class="mt-1 w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500">
+                                <span class="text-sm text-gray-700 dark:text-gray-300">
+                                    我已詳細閱讀並同意 <strong>試用期間條款</strong>
+                                </span>
+                            </label>
+                            
+                            <label class="flex items-start space-x-3 cursor-pointer">
+                                <input type="checkbox" 
+                                    id="agree-equipment" 
+                                    class="mt-1 w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500">
+                                <span class="text-sm text-gray-700 dark:text-gray-300">
+                                    我已詳細閱讀並同意 <strong>工具領用與保管責任條款</strong>
+                                </span>
+                            </label>
+                            
+                            <label class="flex items-start space-x-3 cursor-pointer">
+                                <input type="checkbox" 
+                                    id="agree-safety" 
+                                    class="mt-1 w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500">
+                                <span class="text-sm text-gray-700 dark:text-gray-300">
+                                    我已詳細閱讀並同意 <strong>其他注意事項（含工地安全規定）</strong>
+                                </span>
+                            </label>
                         </div>
                         
                         <!-- 提交按鈕 -->
@@ -1093,7 +1158,7 @@
                                 ✍️ 簽署並提交
                             </button>
                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-                                ⚠️ 請勾選所有條款後才能提交
+                                ⚠️ 請勾選所有條款（共 7 項）後才能提交
                             </p>
                         </div>
                     </div>
