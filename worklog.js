@@ -1246,17 +1246,29 @@ async function batchSubmitWorklogs() {
         const contentInput = document.getElementById(`worklog-content-${index}`);
         const noteInput = document.getElementById(`worklog-note-${index}`);
         
-         // ⭐ 修正：安全地取得員工資訊
-         const employeeId = employeeSelect?.value;
+         // ⭐ 修正：從 JSON 屬性取得員工資訊
+        const employeeId = employeeSelect?.value;
         
-         if (!employeeId) {
-             showNotification(`日誌 #${index}：請選擇員工`, 'error');
-             return;
-         }
-         
-         const selectedOption = employeeSelect.options[employeeSelect.selectedIndex];
-         const employeeName = selectedOption?.getAttribute('data-name') || '';
-         const employeeDept = selectedOption?.getAttribute('data-dept') || '';
+        if (!employeeId) {
+            showNotification(`日誌 #${index}：請選擇員工`, 'error');
+            return;
+        }
+        
+        const selectedOption = employeeSelect.options[employeeSelect.selectedIndex];
+        const empDataStr = selectedOption?.getAttribute('data-employee');
+        
+        let employeeName = '';
+        let employeeDept = '';
+        
+        if (empDataStr) {
+            try {
+                const empData = JSON.parse(empDataStr);
+                employeeName = empData.name || '';
+                employeeDept = empData.dept || '';
+            } catch (e) {
+                console.error('解析員工資料失敗:', e);
+            }
+        }
         // 取得員工資訊
         // const selectedOption = employeeSelect?.options[employeeSelect.selectedIndex];
         // const employeeId = employeeSelect?.value;
