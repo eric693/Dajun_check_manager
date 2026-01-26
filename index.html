@@ -886,7 +886,7 @@
                             📝 工作日誌批量填寫
                         </h2>
                         <p class="text-gray-500 dark:text-gray-400 mb-4">
-                            可一次填寫多位員工的工作日誌
+                            可一次填寫多位員工的工作日誌（備註欄位可個別填寫）
                         </p>
                         
                         <!-- 共用資訊區塊 -->
@@ -988,6 +988,13 @@
                             <!-- 員工記錄容器 -->
                             <div id="worklog-employees-container" class="space-y-4">
                                 <!-- 動態新增的員工記錄會出現在這裡 -->
+                                <!-- 
+                                每個員工卡片格式：
+                                <div class="employee-worklog-row">
+                                    <select class="employee-select">員工選擇</select>
+                                    <input class="note-input">備註</input>
+                                </div>
+                                -->
                             </div>
                             
                             <!-- 空狀態 -->

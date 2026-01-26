@@ -292,6 +292,7 @@ function renderWorklogRecords(worklogs) {
         listEl.appendChild(li);
     });
 }
+
 /**
  * 編輯工作日誌
  */
@@ -437,6 +438,7 @@ async function loadPendingWorklogs() {
         if (emptyEl) emptyEl.style.display = 'block';
     }
 }
+
 
 /**
  * ✅ 新增：載入當月工作日誌統計
@@ -712,9 +714,6 @@ async function approveWorklog(logId) {
     }
 }
 
-/**
- * 拒絕工作日誌
- */
 async function rejectWorklog(logId) {
     const commentInput = document.getElementById(`review-comment-${logId}`);
     const comment = commentInput?.value.trim();
@@ -982,6 +981,7 @@ async function loadAllEmployees() {
         return false;
     }
 }
+
 // ==================== 新增員工工作記錄行 ====================
 function addEmployeeWorklogRow() {
     worklogEmployeeCounter++;
@@ -1008,7 +1008,7 @@ function addEmployeeWorklogRow() {
         submitBtn.style.display = 'block';
     }
     
-    // ⭐ 創建員工記錄卡片（簡化版，只有員工選擇）
+    // ⭐ 創建員工記錄卡片（含員工選擇 + 備註）
     const card = document.createElement('div');
     card.className = 'employee-worklog-row bg-white dark:bg-gray-800 rounded-lg p-4 border-2 border-gray-200 dark:border-gray-700';
     card.id = `worklog-employee-${index}`;
@@ -1024,15 +1024,27 @@ function addEmployeeWorklogRow() {
             </button>
         </div>
         
-        <!-- 員工選擇 -->
-        <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                👤 員工姓名 <span class="text-red-500">*</span>
-            </label>
-            <select class="employee-select w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white">
-                <option value="">請選擇員工</option>
-                ${generateEmployeeOptions()}
-            </select>
+        <div class="space-y-4">
+            <!-- 員工選擇 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    👤 員工姓名 <span class="text-red-500">*</span>
+                </label>
+                <select class="employee-select w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white">
+                    <option value="">請選擇員工</option>
+                    ${generateEmployeeOptions()}
+                </select>
+            </div>
+            
+            <!-- ⭐ 備註欄位 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    💬 備註
+                </label>
+                <input type="text" 
+                       class="note-input w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+                       placeholder="其他補充說明（選填）">
+            </div>
         </div>
     `;
     
@@ -1164,10 +1176,12 @@ async function batchSubmitWorklogs() {
         
         console.log(`\n📝 處理日誌 #${index + 1}:`);
         
-        // 取得員工ID
+        // 取得員工ID和備註
         const employeeId = row.querySelector('.employee-select')?.value;
+        const employeeNote = row.querySelector('.note-input')?.value || '';  // ⭐ 讀取員工備註
         
         console.log(`   員工ID: "${employeeId}"`);
+        console.log(`   備註: "${employeeNote}"`);
         
         // 查找員工
         const employee = allEmployeesList.find(emp => emp.userId === employeeId);
@@ -1182,7 +1196,7 @@ async function batchSubmitWorklogs() {
         console.log(`   📡 提交中...`);
         
         try {
-            // ⭐ 使用 URLSearchParams 傳遞參數
+            // ⭐ 使用 URLSearchParams 傳遞參數（包含員工個別備註）
             const params = new URLSearchParams({
                 targetUserId: employee.userId,
                 targetUserName: employee.name,
@@ -1193,7 +1207,7 @@ async function batchSubmitWorklogs() {
                 serialNumber: commonTimeSlot,      // ⭐ 工作時段
                 hours: parseFloat(commonHours),    // ⭐ 工作時數
                 content: commonContent.trim(),     // ⭐ 工作內容
-                note: ''                           // 備註保持空白
+                note: employeeNote.trim()          // ⭐ 員工個別備註
             });
             
             const result = await callApifetch(`submitWorklog&${params.toString()}`);
