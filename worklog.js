@@ -44,8 +44,8 @@ async function initWorklogTab() {
     }
     
     console.log('');
-    console.log('📡 Step 2: 初始化日期選擇器');
-    initializeDatePicker();
+    // console.log('📡 Step 2: 初始化日期選擇器');
+    // initializeDatePicker();
     
     console.log('📡 Step 3: 新增第一行員工日誌欄位');
     addEmployeeWorklogRow();
