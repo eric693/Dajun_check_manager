@@ -178,7 +178,7 @@ function renderEmployeeData(employee, signature) {
             fields: [
                 { key: '緊急連絡人', label: '緊急聯絡人姓名', type: 'text', required: true },
                 { key: '緊急連絡電話', label: '緊急聯絡人電話', type: 'tel', required: true },
-                { key: '緊急連絡人關係', label: '與本人關係', type: 'select', required: false, options: ['父母', '配偶', '子女', '兄弟姐妹', '其他親屬', '朋友'] }
+                { key: '緊急連絡人關係', label: '與本人關係', type: 'select', required: false, options: ['父親','母親', '配偶', '子女', '兄弟姐妹', '其他親屬', '朋友'] }
             ]
         },
         {
