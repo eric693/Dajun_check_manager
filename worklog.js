@@ -39,16 +39,24 @@ async function initWorklogTab() {
         dateInput.value = today;
     }
     
-    // 綁定新增員工按鈕
+    // ⭐ 修正：移除舊的監聽器再綁定
     const addBtn = document.getElementById('add-employee-worklog-btn');
     if (addBtn) {
-        addBtn.addEventListener('click', addEmployeeWorklogRow);
+        // 移除舊的監聽器
+        const newAddBtn = addBtn.cloneNode(true);
+        addBtn.parentNode.replaceChild(newAddBtn, addBtn);
+        // 綁定新的監聽器
+        newAddBtn.addEventListener('click', addEmployeeWorklogRow);
     }
     
-    // 綁定批量提交按鈕
+    // ⭐ 修正：移除舊的監聽器再綁定
     const submitBtn = document.getElementById('batch-submit-worklog-btn');
     if (submitBtn) {
-        submitBtn.addEventListener('click', batchSubmitWorklogs);
+        // 移除舊的監聽器
+        const newSubmitBtn = submitBtn.cloneNode(true);
+        submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
+        // 綁定新的監聽器
+        newSubmitBtn.addEventListener('click', batchSubmitWorklogs);
     }
     
     // 預設新增一個員工行（方便快速開始）
