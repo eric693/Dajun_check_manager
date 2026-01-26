@@ -1,18 +1,60 @@
 // ==================== 工作日誌功能 ====================
-
+// ==================== 全局變數 ====================
+let worklogEmployeeCounter = 0;  // 員工記錄計數器
+let allEmployeesList = [];       // 所有員工列表
 /**
  * 初始化工作日誌分頁
  */
+// async function initWorklogTab() {
+//     // 顯示當前使用者名稱
+//     const userName = localStorage.getItem('sessionUserName') || '使用者';
+//     const userNameEl = document.getElementById('worklog-user-name');
+//     if (userNameEl) {
+//         userNameEl.textContent = userName;
+//     }
+    
+//     await loadWorklogRecords();
+//     setupWorklogForm();
+// }
 async function initWorklogTab() {
-    // 顯示當前使用者名稱
-    const userName = localStorage.getItem('sessionUserName') || '使用者';
-    const userNameEl = document.getElementById('worklog-user-name');
-    if (userNameEl) {
-        userNameEl.textContent = userName;
+    console.log('📝 初始化工作日誌標籤（批量模式）');
+    
+    // 顯示當前登入者
+    const currentUser = localStorage.getItem('sessionUserName') || '未知使用者';
+    const userRole = localStorage.getItem('sessionUserDept') || '員工';
+    const userDisplay = `${currentUser} (${userRole})`;
+    
+    const currentUserEl = document.getElementById('worklog-current-user');
+    if (currentUserEl) {
+        currentUserEl.textContent = userDisplay;
     }
     
-    await loadWorklogRecords();
-    setupWorklogForm();
+    // 載入員工列表（用於下拉選單）
+    await loadAllEmployees();
+    
+    // 設定今天的日期為預設值
+    const dateInput = document.getElementById('worklog-common-date');
+    if (dateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+    }
+    
+    // 綁定新增員工按鈕
+    const addBtn = document.getElementById('add-employee-worklog-btn');
+    if (addBtn) {
+        addBtn.addEventListener('click', addEmployeeWorklogRow);
+    }
+    
+    // 綁定批量提交按鈕
+    const submitBtn = document.getElementById('batch-submit-worklog-btn');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', batchSubmitWorklogs);
+    }
+    
+    // 預設新增一個員工行（方便快速開始）
+    addEmployeeWorklogRow();
+    
+    console.log('✅ 工作日誌標籤初始化完成');
 }
 
 /**
@@ -935,5 +977,465 @@ async function loadWorklogExportEmployees() {
         
     } catch (error) {
         console.error('❌ 載入員工列表失敗:', error);
+    }
+}
+
+// ==================== 載入所有員工列表 ====================
+async function loadAllEmployees() {
+    try {
+        console.log('📋 載入員工列表...');
+        
+        const res = await callApifetch('getAllUsers');
+        
+        if (res.ok && res.users) {
+            allEmployeesList = res.users;
+            console.log(`✅ 載入 ${allEmployeesList.length} 位員工`);
+        } else {
+            console.warn('⚠️ 載入員工列表失敗');
+            allEmployeesList = [];
+        }
+        
+    } catch (error) {
+        console.error('❌ 載入員工列表錯誤:', error);
+        allEmployeesList = [];
+    }
+}
+
+// ==================== 新增員工工作記錄行 ====================
+function addEmployeeWorklogRow() {
+    worklogEmployeeCounter++;
+    const index = worklogEmployeeCounter;
+    
+    const container = document.getElementById('worklog-employees-container');
+    const emptyState = document.getElementById('worklog-empty-state');
+    const submitBtn = document.getElementById('batch-submit-worklog-btn');
+    const countEl = document.getElementById('worklog-employee-count');
+    
+    if (!container) return;
+    
+    console.log(`➕ 新增員工記錄 #${index}`);
+    
+    // 隱藏空狀態提示
+    if (emptyState) {
+        emptyState.style.display = 'none';
+    }
+    
+    // 顯示提交按鈕
+    if (submitBtn) {
+        submitBtn.style.display = 'block';
+    }
+    
+    // 創建員工記錄卡片
+    const card = document.createElement('div');
+    card.className = 'bg-white dark:bg-gray-800 rounded-lg p-4 border-2 border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow';
+    card.id = `worklog-employee-${index}`;
+    card.dataset.index = index;
+    
+    card.innerHTML = `
+        <div class="flex justify-between items-start mb-4">
+            <h4 class="font-bold text-gray-800 dark:text-white text-lg">
+                📄 日誌 #${index}
+            </h4>
+            <button onclick="removeEmployeeWorklogRow(${index})" 
+                    class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-sm font-medium transition-colors flex items-center">
+                <span class="mr-1">🗑️</span>
+                刪除
+            </button>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- 員工選擇 -->
+            <div class="md:col-span-2">
+                <label for="worklog-employee-${index}" 
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    👤 員工姓名 <span class="text-red-500">*</span>
+                </label>
+                <select id="worklog-employee-${index}" 
+                        class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">請選擇員工</option>
+                    ${generateEmployeeOptions()}
+                </select>
+            </div>
+            
+            <!-- 編號 -->
+            <div>
+                <label for="worklog-serial-${index}" 
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    🔢 編號
+                </label>
+                <input type="number" 
+                       id="worklog-serial-${index}" 
+                       min="1"
+                       placeholder="${index}"
+                       value="${index}"
+                       class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+            
+            <!-- 工作時數 -->
+            <div>
+                <label for="worklog-hours-${index}" 
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    ⏱️ 工作時數 <span class="text-red-500">*</span>
+                </label>
+                <input type="number" 
+                       id="worklog-hours-${index}" 
+                       step="0.5" 
+                       min="0.5" 
+                       max="24"
+                       placeholder="8.0"
+                       value="8.0"
+                       class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+            
+            <!-- 工作內容 -->
+            <div class="md:col-span-2">
+                <label for="worklog-content-${index}" 
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    📝 工作內容 <span class="text-red-500">*</span>
+                </label>
+                <textarea id="worklog-content-${index}" 
+                          rows="3" 
+                          placeholder="請描述該員工的工作內容...（至少 10 個字）"
+                          class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    💡 提示：請詳細描述工作項目，例如「建國預留筋、樓梯放樣」
+                </p>
+            </div>
+            
+            <!-- 備註 -->
+            <div class="md:col-span-2">
+                <label for="worklog-note-${index}" 
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    💬 備註
+                </label>
+                <input type="text" 
+                       id="worklog-note-${index}" 
+                       placeholder="其他補充說明（選填）"
+                       class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(card);
+    
+    // 更新計數
+    updateEmployeeCount();
+    
+    // 滾動到新增的卡片
+    setTimeout(() => {
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+}
+
+// ==================== 生成員工選項 ====================
+function generateEmployeeOptions() {
+    if (!allEmployeesList || allEmployeesList.length === 0) {
+        return '<option value="">暫無員工資料</option>';
+    }
+    
+    return allEmployeesList.map(emp => {
+        return `<option value="${emp.userId}" data-name="${emp.name}" data-dept="${emp.dept || '未分配'}">
+            ${emp.name} ${emp.dept ? '(' + emp.dept + ')' : ''}
+        </option>`;
+    }).join('');
+}
+
+// ==================== 刪除員工工作記錄行 ====================
+function removeEmployeeWorklogRow(index) {
+    console.log(`🗑️ 刪除員工記錄 #${index}`);
+    
+    const card = document.getElementById(`worklog-employee-${index}`);
+    if (card) {
+        // 添加淡出動畫
+        card.style.opacity = '0';
+        card.style.transform = 'translateX(-20px)';
+        card.style.transition = 'all 0.3s ease';
+        
+        setTimeout(() => {
+            card.remove();
+            
+            // 更新計數
+            updateEmployeeCount();
+            
+            // 檢查是否還有記錄
+            const container = document.getElementById('worklog-employees-container');
+            const emptyState = document.getElementById('worklog-empty-state');
+            const submitBtn = document.getElementById('batch-submit-worklog-btn');
+            
+            if (container && container.children.length === 0) {
+                // 沒有記錄了，顯示空狀態
+                if (emptyState) {
+                    emptyState.style.display = 'block';
+                }
+                if (submitBtn) {
+                    submitBtn.style.display = 'none';
+                }
+            }
+        }, 300);
+    }
+}
+
+// ==================== 更新員工計數 ====================
+function updateEmployeeCount() {
+    const container = document.getElementById('worklog-employees-container');
+    const countEl = document.getElementById('worklog-employee-count');
+    const submitCountEl = document.getElementById('submit-count');
+    
+    if (container && countEl) {
+        const count = container.children.length;
+        countEl.textContent = `(${count} 人)`;
+        
+        if (submitCountEl) {
+            submitCountEl.textContent = count;
+        }
+    }
+}
+
+// ==================== 批量提交工作日誌 ====================
+async function batchSubmitWorklogs() {
+    console.log('📤 開始批量提交工作日誌');
+    console.log('═══════════════════════════════════════');
+    
+    // 取得共用資訊
+    const commonDate = document.getElementById('worklog-common-date')?.value;
+    const commonWeather = document.getElementById('worklog-common-weather')?.value;
+    const commonLocation = document.getElementById('worklog-common-location')?.value.trim();
+    
+    console.log('📅 共用資訊:');
+    console.log('   日期: ' + commonDate);
+    console.log('   天氣: ' + commonWeather);
+    console.log('   地點: ' + commonLocation);
+    console.log('');
+    
+    // 驗證共用資訊
+    if (!commonDate) {
+        showNotification('請選擇工作日期', 'error');
+        return;
+    }
+    
+    if (!commonWeather) {
+        showNotification('請選擇天氣', 'error');
+        return;
+    }
+    
+    if (!commonLocation) {
+        showNotification('請填寫工作地點', 'error');
+        return;
+    }
+    
+    // 收集所有員工記錄
+    const container = document.getElementById('worklog-employees-container');
+    if (!container || container.children.length === 0) {
+        showNotification('請至少新增一位員工的工作記錄', 'error');
+        return;
+    }
+    
+    const worklogs = [];
+    const cards = container.querySelectorAll('[id^="worklog-employee-"]');
+    
+    console.log(`📋 收集 ${cards.length} 筆員工記錄...`);
+    console.log('');
+    
+    for (let i = 0; i < cards.length; i++) {
+        const card = cards[i];
+        const index = card.dataset.index;
+        
+        const employeeSelect = document.getElementById(`worklog-employee-${index}`);
+        const serialInput = document.getElementById(`worklog-serial-${index}`);
+        const hoursInput = document.getElementById(`worklog-hours-${index}`);
+        const contentInput = document.getElementById(`worklog-content-${index}`);
+        const noteInput = document.getElementById(`worklog-note-${index}`);
+        
+        // 取得員工資訊
+        const selectedOption = employeeSelect?.options[employeeSelect.selectedIndex];
+        const employeeId = employeeSelect?.value;
+        const employeeName = selectedOption?.dataset.name || '';
+        const employeeDept = selectedOption?.dataset.dept || '';
+        
+        const serialNumber = serialInput?.value || '';
+        const hours = parseFloat(hoursInput?.value);
+        const content = contentInput?.value.trim();
+        const note = noteInput?.value.trim() || '';
+        
+        console.log(`📄 日誌 #${index}:`);
+        console.log(`   員工: ${employeeName} (${employeeDept})`);
+        console.log(`   編號: ${serialNumber || '無'}`);
+        console.log(`   時數: ${hours}`);
+        console.log(`   內容長度: ${content.length} 字`);
+        console.log('');
+        
+        // 驗證該員工的記錄
+        if (!employeeId) {
+            showNotification(`日誌 #${index}：請選擇員工`, 'error');
+            return;
+        }
+        
+        if (!hours || hours <= 0) {
+            showNotification(`日誌 #${index} (${employeeName})：請輸入工作時數`, 'error');
+            return;
+        }
+        
+        if (!content || content.length < 10) {
+            showNotification(`日誌 #${index} (${employeeName})：工作內容至少需要 10 個字`, 'error');
+            return;
+        }
+        
+        // 加入陣列
+        worklogs.push({
+            employeeId: employeeId,
+            employeeName: employeeName,
+            employeeDept: employeeDept,
+            date: commonDate,
+            weather: commonWeather,
+            location: commonLocation,
+            serialNumber: serialNumber,
+            hours: hours,
+            content: content,
+            note: note
+        });
+    }
+    
+    console.log(`✅ 驗證通過，準備提交 ${worklogs.length} 筆工作日誌`);
+    console.log('═══════════════════════════════════════');
+    console.log('');
+    
+    // 顯示載入狀態
+    const submitBtn = document.getElementById('batch-submit-worklog-btn');
+    const originalHTML = submitBtn?.innerHTML;
+    generalButtonState(submitBtn, 'processing', `提交中... (0/${worklogs.length})`);
+    
+    try {
+        let successCount = 0;
+        let failCount = 0;
+        const failedLogs = [];
+        
+        // 逐筆提交
+        for (let i = 0; i < worklogs.length; i++) {
+            const log = worklogs[i];
+            
+            console.log(`[${i + 1}/${worklogs.length}] 提交 ${log.employeeName} 的工作日誌...`);
+            
+            // 更新進度
+            if (submitBtn) {
+                submitBtn.innerHTML = `
+                    <span class="inline-block animate-spin mr-2">⏳</span>
+                    提交中... (${i + 1}/${worklogs.length})
+                `;
+            }
+            
+            const params = new URLSearchParams({
+                targetUserId: log.employeeId,
+                targetUserName: log.employeeName,
+                targetUserDept: log.employeeDept,
+                date: log.date,
+                weather: log.weather,
+                location: log.location,
+                serialNumber: log.serialNumber,
+                hours: log.hours,
+                content: log.content,
+                note: log.note
+            });
+            
+            try {
+                const res = await callApifetch(`submitWorklog&${params.toString()}`);
+                
+                if (res.ok) {
+                    successCount++;
+                    console.log(`   ✅ 成功`);
+                } else {
+                    failCount++;
+                    failedLogs.push({ name: log.employeeName, reason: res.msg });
+                    console.error(`   ❌ 失敗: ${res.msg}`);
+                }
+                
+            } catch (error) {
+                failCount++;
+                failedLogs.push({ name: log.employeeName, reason: error.message });
+                console.error(`   ❌ 錯誤:`, error);
+            }
+            
+            // 避免請求過快
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+        
+        console.log('');
+        console.log('═══════════════════════════════════════');
+        console.log('📊 提交結果統計:');
+        console.log(`   成功: ${successCount} 筆`);
+        console.log(`   失敗: ${failCount} 筆`);
+        console.log('═══════════════════════════════════════');
+        
+        // 顯示結果
+        if (failCount === 0) {
+            showNotification(`✅ 成功提交 ${successCount} 筆工作日誌！`, 'success');
+            
+            // 清空表單
+            container.innerHTML = '';
+            worklogEmployeeCounter = 0;
+            
+            // 重置共用欄位
+            document.getElementById('worklog-common-weather').value = '';
+            document.getElementById('worklog-common-location').value = '';
+            
+            // 顯示空狀態
+            const emptyState = document.getElementById('worklog-empty-state');
+            if (emptyState) {
+                emptyState.style.display = 'block';
+            }
+            if (submitBtn) {
+                submitBtn.style.display = 'none';
+            }
+            
+            updateEmployeeCount();
+            
+        } else {
+            let errorMsg = `⚠️ 完成提交：成功 ${successCount} 筆，失敗 ${failCount} 筆\n\n失敗的記錄：\n`;
+            failedLogs.forEach(log => {
+                errorMsg += `• ${log.name}: ${log.reason}\n`;
+            });
+            
+            showNotification(errorMsg, 'warning');
+            
+            // 不清空表單，讓使用者可以修改後重試
+        }
+        
+    } catch (error) {
+        console.error('❌ 批量提交錯誤:', error);
+        showNotification('批量提交失敗：' + error.message, 'error');
+        
+    } finally {
+        generalButtonState(submitBtn, 'idle');
+        if (submitBtn && originalHTML) {
+            submitBtn.innerHTML = originalHTML;
+        }
+        updateEmployeeCount();
+    }
+}
+
+// ==================== 快捷功能：複製上一筆記錄 ====================
+function duplicateLastWorklogRow() {
+    const container = document.getElementById('worklog-employees-container');
+    if (!container || container.children.length === 0) {
+        addEmployeeWorklogRow();
+        return;
+    }
+    
+    // 取得最後一筆記錄
+    const lastCard = container.lastElementChild;
+    const lastIndex = lastCard.dataset.index;
+    
+    // 複製資料
+    const lastEmployee = document.getElementById(`worklog-employee-${lastIndex}`)?.value;
+    const lastHours = document.getElementById(`worklog-hours-${lastIndex}`)?.value;
+    const lastContent = document.getElementById(`worklog-content-${lastIndex}`)?.value;
+    
+    // 新增一筆
+    addEmployeeWorklogRow();
+    
+    // 填入複製的資料（除了員工）
+    const newIndex = worklogEmployeeCounter;
+    if (lastHours) {
+        const hoursInput = document.getElementById(`worklog-hours-${newIndex}`);
+        if (hoursInput) hoursInput.value = lastHours;
     }
 }
