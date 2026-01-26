@@ -902,8 +902,8 @@
                                         工作日期 <span class="text-red-500">*</span>
                                     </label>
                                     <input type="date" 
-                                           id="worklog-common-date" 
-                                           class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white">
+                                        id="worklog-common-date" 
+                                        class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white">
                                 </div>
                                 
                                 <!-- 天氣 -->
@@ -927,18 +927,57 @@
                                         地點 <span class="text-red-500">*</span>
                                     </label>
                                     <input type="text" 
-                                           id="worklog-common-location" 
-                                           placeholder="例如：永清、亞灣、建國"
-                                           class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white">
+                                        id="worklog-common-location" 
+                                        placeholder="例如：永清、亞灣、建國"
+                                        class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white">
+                                </div>
+                                
+                                <!-- ⭐ 工作時段 -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        工作時段 <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" 
+                                        id="worklog-common-timeslot" 
+                                        placeholder="例如：08-17、09-18"
+                                        class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white">
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        請輸入工作時段，例如：08-17 表示早上8點到下午5點
+                                    </p>
+                                </div>
+                                
+                                <!-- ⭐ 工作時數 -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        工作時數 <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="number" 
+                                        id="worklog-common-hours" 
+                                        step="0.5" 
+                                        min="0.5" 
+                                        max="24"
+                                        placeholder="8.0"
+                                        class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white">
+                                </div>
+                                
+                                <!-- ⭐ 工作內容 -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        工作內容 <span class="text-red-500">*</span>
+                                    </label>
+                                    <textarea id="worklog-common-content" 
+                                            rows="4" 
+                                            placeholder="請描述工作內容（至少 10 個字）"
+                                            class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"></textarea>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- ⭐⭐⭐ 關鍵：員工記錄列表容器 -->
+                        <!-- 員工記錄列表容器 -->
                         <div class="mb-6">
                             <div class="flex justify-between items-center mb-4">
                                 <h3 class="font-bold text-gray-800 dark:text-white">
-                                    👥 員工工作記錄 <span id="worklog-employee-count" class="text-sm text-gray-500">(0 人)</span>
+                                    👥 員工列表 <span id="worklog-employee-count" class="text-sm text-gray-500">(0 人)</span>
                                 </h3>
                                 <button onclick="addEmployeeWorklogRow()" 
                                         class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium">
@@ -946,7 +985,7 @@
                                 </button>
                             </div>
                             
-                            <!-- ⭐⭐⭐ 這是關鍵容器 -->
+                            <!-- 員工記錄容器 -->
                             <div id="worklog-employees-container" class="space-y-4">
                                 <!-- 動態新增的員工記錄會出現在這裡 -->
                             </div>
@@ -963,7 +1002,7 @@
                             </div>
                         </div>
                         
-                        <!-- ⭐⭐⭐ 批量提交按鈕 -->
+                        <!-- 批量提交按鈕 -->
                         <button id="batch-submit-worklog-btn" 
                                 onclick="batchSubmitWorklogs()"
                                 class="w-full py-3 px-4 rounded-lg font-bold btn-primary"
@@ -972,7 +1011,7 @@
                         </button>
                     </div>
 
-                    <!-- 📋 我的工作日誌記錄（所有人都能看） -->
+                    <!-- 我的工作日誌記錄 -->
                     <div class="card p-6">
                         <h2>📋 我的工作日誌</h2>
                         <p>查看已提交的工作日誌與審核狀態</p>

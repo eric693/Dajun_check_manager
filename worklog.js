@@ -3,20 +3,6 @@
 let worklogEmployeeCounter = 0;  // 員工記錄計數器
 let allEmployeesList = [];       // 所有員工列表
 /**
- * 初始化工作日誌分頁
- */
-// async function initWorklogTab() {
-//     // 顯示當前使用者名稱
-//     const userName = localStorage.getItem('sessionUserName') || '使用者';
-//     const userNameEl = document.getElementById('worklog-user-name');
-//     if (userNameEl) {
-//         userNameEl.textContent = userName;
-//     }
-    
-//     await loadWorklogRecords();
-//     setupWorklogForm();
-// }
-/**
  * ✅ 初始化工作日誌標籤（批量模式）
  */
 async function initWorklogTab() {
@@ -39,6 +25,7 @@ async function initWorklogTab() {
     console.log('✅ 工作日誌標籤初始化完成');
     console.log('═══════════════════════════════════════');
 }
+
 
 /**
  * 設定工作日誌表單
@@ -305,7 +292,6 @@ function renderWorklogRecords(worklogs) {
         listEl.appendChild(li);
     });
 }
-
 /**
  * 編輯工作日誌
  */
@@ -423,9 +409,6 @@ async function deleteWorklog(logId) {
 
 // ==================== 管理員功能 ====================
 
-/**
- * 載入待審核的工作日誌
- */
 async function loadPendingWorklogs() {
     const loadingEl = document.getElementById('worklog-requests-loading');
     const emptyEl = document.getElementById('worklog-requests-empty');
@@ -600,14 +583,12 @@ function renderPendingWorklogs(worklogs) {
     
     listEl.innerHTML = '';
     
-    // ✅ 安全翻譯函數
     const safeTranslate = (key, fallback) => {
         if (typeof t !== 'function') return fallback;
         const result = t(key);
         return (result && result !== key) ? result : fallback;
     };
     
-    // ✅ 預先取得所有翻譯
     const unitHours = safeTranslate('UNIT_HOURS', '小時');
     const submittedAt = safeTranslate('SUBMITTED_AT', '提交於');
     const workContent = safeTranslate('WORK_CONTENT', '工作內容');
@@ -623,7 +604,6 @@ function renderPendingWorklogs(worklogs) {
         const li = document.createElement('li');
         li.className = 'bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700';
         
-        // 格式化工作日期
         let workDateStr = log.date;
         if (log.date) {
             try {
@@ -641,7 +621,6 @@ function renderPendingWorklogs(worklogs) {
             }
         }
         
-        // 格式化提交時間
         let submittedTimeStr = '';
         if (log.submittedAt) {
             try {
@@ -721,16 +700,15 @@ async function approveWorklog(logId) {
         const res = await callApifetch(url);
         
         if (res.ok) {
-            showNotification(t('WORKLOG_APPROVE_SUCCESS') || '工作日誌已核准', 'success');
+            showNotification('工作日誌已核准', 'success');
             await loadPendingWorklogs();
-            await loadWorklogMonthlyStats(); // 刷新統計
         } else {
-            showNotification(res.msg || t('APPROVE_FAILED') || '核准失敗', 'error');
+            showNotification(res.msg || '核准失敗', 'error');
         }
         
     } catch (error) {
         console.error('核准失敗:', error);
-        showNotification(t('NETWORK_ERROR') || '網路錯誤', 'error');
+        showNotification('網路錯誤', 'error');
     }
 }
 
@@ -742,7 +720,7 @@ async function rejectWorklog(logId) {
     const comment = commentInput?.value.trim();
     
     if (!comment) {
-        showNotification(t('REJECT_REASON_REQUIRED') || '請填寫拒絕原因', 'error');
+        showNotification('請填寫拒絕原因', 'error');
         commentInput?.focus();
         return;
     }
@@ -752,19 +730,17 @@ async function rejectWorklog(logId) {
         const res = await callApifetch(url);
         
         if (res.ok) {
-            showNotification(t('WORKLOG_REJECT_SUCCESS') || '工作日誌已拒絕', 'success');
+            showNotification('工作日誌已拒絕', 'success');
             await loadPendingWorklogs();
-            await loadWorklogMonthlyStats(); // 刷新統計
         } else {
-            showNotification(res.msg || t('REJECT_FAILED') || '拒絕失敗', 'error');
+            showNotification(res.msg || '拒絕失敗', 'error');
         }
         
     } catch (error) {
         console.error('拒絕失敗:', error);
-        showNotification(t('NETWORK_ERROR') || '網路錯誤', 'error');
+        showNotification('網路錯誤', 'error');
     }
 }
-
 /**
  * 匯出工作日誌報表（支援全部員工）
  */
@@ -982,52 +958,17 @@ async function loadAllEmployees() {
         console.log('   msg: ' + (res.msg || '無'));
         console.log('   users: ' + (res.users ? res.users.length + ' 筆' : '無'));
         
-        // ⭐⭐⭐ 關鍵：檢查回應格式
-        if (!res) {
-            console.error('❌ API 回應為 null 或 undefined');
+        if (!res || !res.ok || !res.users || !Array.isArray(res.users) || res.users.length === 0) {
+            console.error('❌ API 回應無效');
             allEmployeesList = [];
             return false;
         }
         
-        if (!res.ok) {
-            console.error('❌ API 回應 ok = false');
-            console.error('   原因: ' + res.msg);
-            allEmployeesList = [];
-            return false;
-        }
-        
-        if (!res.users) {
-            console.error('❌ API 回應沒有 users 欄位');
-            console.error('   完整回應: ' + JSON.stringify(res));
-            allEmployeesList = [];
-            return false;
-        }
-        
-        if (!Array.isArray(res.users)) {
-            console.error('❌ res.users 不是陣列');
-            console.error('   型別: ' + typeof res.users);
-            allEmployeesList = [];
-            return false;
-        }
-        
-        if (res.users.length === 0) {
-            console.warn('⚠️ res.users 是空陣列');
-            allEmployeesList = [];
-            return false;
-        }
-        
-        // ✅ 一切正常，載入員工列表
         allEmployeesList = res.users;
         
         console.log('');
         console.log('✅ 員工列表載入成功');
         console.log('   總數: ' + allEmployeesList.length);
-        console.log('');
-        console.log('📋 前 5 位員工:');
-        allEmployeesList.slice(0, 5).forEach((emp, index) => {
-            console.log(`   ${index + 1}. ${emp.name} (${emp.userId}) - ${emp.dept}`);
-        });
-        
         console.log('═══════════════════════════════════════');
         return true;
         
@@ -1035,7 +976,6 @@ async function loadAllEmployees() {
         console.error('');
         console.error('❌❌❌ loadAllEmployees 發生錯誤');
         console.error('錯誤訊息: ' + error.message);
-        console.error('錯誤堆疊: ' + error.stack);
         console.error('═══════════════════════════════════════');
         
         allEmployeesList = [];
@@ -1068,15 +1008,15 @@ function addEmployeeWorklogRow() {
         submitBtn.style.display = 'block';
     }
     
-    // ⭐⭐⭐ 關鍵：創建員工記錄卡片（注意 class 名稱）
+    // ⭐ 創建員工記錄卡片（簡化版，只有員工選擇）
     const card = document.createElement('div');
-    card.className = 'employee-worklog-row bg-white dark:bg-gray-800 rounded-lg p-4 border-2 border-gray-200 dark:border-gray-700';  // ⭐ 加上 employee-worklog-row class
+    card.className = 'employee-worklog-row bg-white dark:bg-gray-800 rounded-lg p-4 border-2 border-gray-200 dark:border-gray-700';
     card.id = `worklog-employee-${index}`;
     
     card.innerHTML = `
         <div class="flex justify-between items-start mb-4">
             <h4 class="font-bold text-gray-800 dark:text-white">
-                📄 日誌 #${index}
+                📄 員工 #${index}
             </h4>
             <button onclick="removeEmployeeWorklogRow(${index})" 
                     class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded">
@@ -1084,60 +1024,15 @@ function addEmployeeWorklogRow() {
             </button>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- 員工選擇 -->
-            <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    👤 員工姓名 <span class="text-red-500">*</span>
-                </label>
-                <select class="employee-select w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white">
-                    <option value="">請選擇員工</option>
-                    ${generateEmployeeOptions()}
-                </select>
-            </div>
-            
-            <!-- 編號 -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    🔢 編號
-                </label>
-                <input type="text" 
-                       class="serial-number-input w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
-                       value="${index}">
-            </div>
-            
-            <!-- 工作時數 -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    ⏱️ 工作時數 <span class="text-red-500">*</span>
-                </label>
-                <input type="number" 
-                       class="hours-input w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
-                       value="8.0"
-                       step="0.5" 
-                       min="0.5" 
-                       max="24">
-            </div>
-            
-            <!-- 工作內容 -->
-            <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    📝 工作內容 <span class="text-red-500">*</span>
-                </label>
-                <textarea class="content-textarea w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
-                          rows="3" 
-                          placeholder="請描述工作內容（至少 10 個字）"></textarea>
-            </div>
-            
-            <!-- 備註 -->
-            <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    💬 備註
-                </label>
-                <input type="text" 
-                       class="note-textarea w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
-                       placeholder="其他補充說明（選填）">
-            </div>
+        <!-- 員工選擇 -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                👤 員工姓名 <span class="text-red-500">*</span>
+            </label>
+            <select class="employee-select w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white">
+                <option value="">請選擇員工</option>
+                ${generateEmployeeOptions()}
+            </select>
         </div>
     `;
     
@@ -1149,6 +1044,7 @@ function addEmployeeWorklogRow() {
         card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 100);
 }
+
 
 // ==================== 生成員工選項 ====================
 function generateEmployeeOptions() {
@@ -1169,24 +1065,19 @@ function removeEmployeeWorklogRow(index) {
     
     const card = document.getElementById(`worklog-employee-${index}`);
     if (card) {
-        // 添加淡出動畫
         card.style.opacity = '0';
         card.style.transform = 'translateX(-20px)';
         card.style.transition = 'all 0.3s ease';
         
         setTimeout(() => {
             card.remove();
-            
-            // 更新計數
             updateEmployeeCount();
             
-            // 檢查是否還有記錄
             const container = document.getElementById('worklog-employees-container');
             const emptyState = document.getElementById('worklog-empty-state');
             const submitBtn = document.getElementById('batch-submit-worklog-btn');
             
             if (container && container.children.length === 0) {
-                // 沒有記錄了，顯示空狀態
                 if (emptyState) {
                     emptyState.style.display = 'block';
                 }
@@ -1220,19 +1111,40 @@ async function batchSubmitWorklogs() {
     console.log('📝 批量提交工作日誌');
     console.log('═══════════════════════════════════════');
     
-    // 取得共用資訊
+    // ⭐ 取得共用資訊（包含新的工作內容等欄位）
     const commonDate = document.getElementById('worklog-common-date')?.value;
     const commonWeather = document.getElementById('worklog-common-weather')?.value;
     const commonLocation = document.getElementById('worklog-common-location')?.value;
+    const commonTimeSlot = document.getElementById('worklog-common-timeslot')?.value;  // ⭐ 新增
+    const commonHours = document.getElementById('worklog-common-hours')?.value;        // ⭐ 新增
+    const commonContent = document.getElementById('worklog-common-content')?.value;    // ⭐ 新增
     
     console.log('📋 共用資訊:');
     console.log('   日期:', commonDate);
     console.log('   天氣:', commonWeather);
     console.log('   地點:', commonLocation);
+    console.log('   工作時段:', commonTimeSlot);
+    console.log('   工作時數:', commonHours);
+    console.log('   工作內容:', commonContent);
     
-    // 驗證共用資訊
+    // ⭐ 驗證共用資訊
     if (!commonDate || !commonWeather || !commonLocation) {
         showNotification('❌ 請填寫完整的共用資訊（日期、天氣、地點）', 'error');
+        return;
+    }
+    
+    if (!commonTimeSlot) {
+        showNotification('❌ 請填寫工作時段', 'error');
+        return;
+    }
+    
+    if (!commonHours) {
+        showNotification('❌ 請填寫工作時數', 'error');
+        return;
+    }
+    
+    if (!commonContent || commonContent.trim().length < 10) {
+        showNotification('❌ 請填寫工作內容（至少 10 個字）', 'error');
         return;
     }
     
@@ -1240,22 +1152,10 @@ async function batchSubmitWorklogs() {
     const rows = document.querySelectorAll('.employee-worklog-row');
     
     console.log('📊 員工記錄數:', rows.length);
-    console.log('📊 員工列表數量:', allEmployeesList ? allEmployeesList.length : 0);
     
     if (rows.length === 0) {
         showNotification('❌ 請至少新增一筆員工記錄', 'error');
         return;
-    }
-    
-    // 檢查員工列表
-    if (!allEmployeesList || allEmployeesList.length === 0) {
-        console.error('❌ 員工列表為空，嘗試重新載入...');
-        await loadAllEmployees();
-        
-        if (!allEmployeesList || allEmployeesList.length === 0) {
-            showNotification('❌ 無法載入員工列表，請重新整理頁面', 'error');
-            return;
-        }
     }
     
     // 開始處理每一行
@@ -1264,19 +1164,10 @@ async function batchSubmitWorklogs() {
         
         console.log(`\n📝 處理日誌 #${index + 1}:`);
         
-        // 取得表單數據
+        // 取得員工ID
         const employeeId = row.querySelector('.employee-select')?.value;
-        const serialNumber = row.querySelector('.serial-number-input')?.value;
-        const hours = row.querySelector('.hours-input')?.value;
-        const content = row.querySelector('.content-textarea')?.value;
-        const note = row.querySelector('.note-textarea')?.value;
         
         console.log(`   員工ID: "${employeeId}"`);
-        console.log(`   編號: ${serialNumber}`);
-        console.log(`   時數: ${hours}`);
-        console.log(`   工作內容: "${content}"`);
-        console.log(`   工作內容長度: ${content ? content.length : 0}`);
-        console.log(`   備註: "${note}"`);
         
         // 查找員工
         const employee = allEmployeesList.find(emp => emp.userId === employeeId);
@@ -1288,31 +1179,10 @@ async function batchSubmitWorklogs() {
         }
         
         console.log(`   ✅ 找到員工: ${employee.name}`);
-        
-        // 驗證必填欄位
-        if (!hours) {
-            console.error(`   ❌ 缺少工作時數`);
-            showNotification(`日誌 #${index + 1}：請填寫工作時數`, 'error');
-            return;
-        }
-        
-        if (!content) {
-            console.error(`   ❌ 缺少工作內容`);
-            showNotification(`日誌 #${index + 1}：請填寫工作內容`, 'error');
-            return;
-        }
-        
-        if (content.trim().length < 10) {
-            console.error(`   ❌ 工作內容太短 (${content.trim().length} 字)`);
-            showNotification(`日誌 #${index + 1}：工作內容至少需要 10 個字（目前 ${content.trim().length} 字）`, 'error');
-            return;
-        }
-        
-        console.log(`   ✅ 欄位驗證通過`);
         console.log(`   📡 提交中...`);
         
         try {
-            // ⭐⭐⭐ 關鍵修正：改用 URLSearchParams 傳遞參數
+            // ⭐ 使用 URLSearchParams 傳遞參數
             const params = new URLSearchParams({
                 targetUserId: employee.userId,
                 targetUserName: employee.name,
@@ -1320,10 +1190,10 @@ async function batchSubmitWorklogs() {
                 date: commonDate,
                 weather: commonWeather,
                 location: commonLocation,
-                serialNumber: serialNumber || (index + 1).toString(),
-                hours: parseFloat(hours),
-                content: content.trim(),
-                note: note ? note.trim() : ''
+                serialNumber: commonTimeSlot,      // ⭐ 工作時段
+                hours: parseFloat(commonHours),    // ⭐ 工作時數
+                content: commonContent.trim(),     // ⭐ 工作內容
+                note: ''                           // 備註保持空白
             });
             
             const result = await callApifetch(`submitWorklog&${params.toString()}`);
@@ -1364,11 +1234,18 @@ async function batchSubmitWorklogs() {
     const dateInput = document.getElementById('worklog-common-date');
     const weatherInput = document.getElementById('worklog-common-weather');
     const locationInput = document.getElementById('worklog-common-location');
+    const timeslotInput = document.getElementById('worklog-common-timeslot');
+    const hoursInput = document.getElementById('worklog-common-hours');
+    const contentInput = document.getElementById('worklog-common-content');
     
     if (dateInput) dateInput.value = '';
     if (weatherInput) weatherInput.value = '';
     if (locationInput) locationInput.value = '';
+    if (timeslotInput) timeslotInput.value = '';
+    if (hoursInput) hoursInput.value = '';
+    if (contentInput) contentInput.value = '';
 }
+
 // ==================== 快捷功能：複製上一筆記錄 ====================
 function duplicateLastWorklogRow() {
     const container = document.getElementById('worklog-employees-container');
