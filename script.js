@@ -4383,16 +4383,6 @@ async function loadEmployeeEquipmentIssue() {
             // 渲染裝備清單
             renderEquipmentList(data.equipmentList);
 
-            // ✅ 顯示總金額（後端有回傳就用）
-            // const totalEl = document.getElementById('equipment-total-amount');
-            // if (totalEl) {
-            //     const total = Number(data.totalAmount ?? 0);
-            //     totalEl.textContent = `$${total}`;
-            // } else {
-            //     // 若你還沒加 HTML 那個 span，不會噴錯
-            //     console.warn('⚠️ 尚未加入 #equipment-total-amount');
-            // }
-
         } else {
             showNotification(res.msg || '載入失敗', 'error');
         }
