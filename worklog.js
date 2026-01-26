@@ -1234,7 +1234,7 @@ async function batchSubmitWorklogs() {
     console.log('📝 批量提交工作日誌');
     console.log('═══════════════════════════════════════');
     
-    // ⭐ 取得共用資訊
+    // 取得共用資訊
     const commonDate = document.getElementById('worklog-common-date')?.value;
     const commonWeather = document.getElementById('worklog-common-weather')?.value;
     const commonLocation = document.getElementById('worklog-common-location')?.value;
@@ -1250,7 +1250,7 @@ async function batchSubmitWorklogs() {
         return;
     }
     
-    // ⭐⭐⭐ 取得所有員工記錄行
+    // 取得所有員工記錄行
     const rows = document.querySelectorAll('.employee-worklog-row');
     
     console.log('📊 員工記錄數:', rows.length);
@@ -1278,15 +1278,20 @@ async function batchSubmitWorklogs() {
         
         console.log(`\n📝 處理日誌 #${index + 1}:`);
         
+        // ⭐⭐⭐ 取得表單數據
         const employeeId = row.querySelector('.employee-select')?.value;
         const serialNumber = row.querySelector('.serial-number-input')?.value;
         const hours = row.querySelector('.hours-input')?.value;
         const content = row.querySelector('.content-textarea')?.value;
         const note = row.querySelector('.note-textarea')?.value;
         
+        // ⭐⭐⭐ 詳細 log
         console.log(`   員工ID: "${employeeId}"`);
         console.log(`   編號: ${serialNumber}`);
         console.log(`   時數: ${hours}`);
+        console.log(`   工作內容: "${content}"`);
+        console.log(`   工作內容長度: ${content ? content.length : 0}`);
+        console.log(`   備註: "${note}"`);
         
         // 查找員工
         const employee = allEmployeesList.find(emp => emp.userId === employeeId);
@@ -1299,12 +1304,26 @@ async function batchSubmitWorklogs() {
         
         console.log(`   ✅ 找到員工: ${employee.name}`);
         
-        // 驗證必填欄位
-        if (!hours || !content || content.length < 10) {
-            console.error(`   ❌ 缺少必填欄位`);
-            showNotification(`日誌 #${index + 1}：請填寫完整資訊`, 'error');
+        // ⭐⭐⭐ 驗證必填欄位（詳細檢查）
+        if (!hours) {
+            console.error(`   ❌ 缺少工作時數`);
+            showNotification(`日誌 #${index + 1}：請填寫工作時數`, 'error');
             return;
         }
+        
+        if (!content) {
+            console.error(`   ❌ 缺少工作內容`);
+            showNotification(`日誌 #${index + 1}：請填寫工作內容`, 'error');
+            return;
+        }
+        
+        if (content.trim().length < 10) {
+            console.error(`   ❌ 工作內容太短 (${content.trim().length} 字)`);
+            showNotification(`日誌 #${index + 1}：工作內容至少需要 10 個字（目前 ${content.trim().length} 字）`, 'error');
+            return;
+        }
+        
+        console.log(`   ✅ 欄位驗證通過`);
         
         // 提交
         console.log(`   📡 提交中...`);
@@ -1317,22 +1336,24 @@ async function batchSubmitWorklogs() {
                 date: commonDate,
                 weather: commonWeather,
                 location: commonLocation,
-                serialNumber: serialNumber || index + 1,
-                hours: hours,
-                content: content,
-                note: note || ''
+                serialNumber: serialNumber || (index + 1).toString(),
+                hours: parseFloat(hours),
+                content: content.trim(),
+                note: note ? note.trim() : ''
             });
             
+            console.log(`   📤 API 回應:`, result);
+            
             if (result.ok) {
-                console.log(`   ✅ 提交成功`);
+                console.log(`   ✅ 日誌 #${index + 1} 提交成功`);
             } else {
-                console.error(`   ❌ 提交失敗:`, result.msg);
+                console.error(`   ❌ 日誌 #${index + 1} 提交失敗:`, result.msg);
                 showNotification(`日誌 #${index + 1}：${result.msg}`, 'error');
                 return;
             }
             
         } catch (error) {
-            console.error(`   ❌ 提交異常:`, error);
+            console.error(`   ❌ 日誌 #${index + 1} 提交異常:`, error);
             showNotification(`日誌 #${index + 1}：提交失敗`, 'error');
             return;
         }
@@ -1342,12 +1363,25 @@ async function batchSubmitWorklogs() {
     console.log('   成功提交:', rows.length, '筆');
     console.log('═══════════════════════════════════════');
     
-    showNotification('✅ 批量提交成功！', 'success');
+    showNotification(`✅ 成功提交 ${rows.length} 筆工作日誌！`, 'success');
     
     // 清空表單
-    document.getElementById('worklog-employees-container').innerHTML = '';
-    document.getElementById('worklog-empty-state').style.display = 'block';
-    document.getElementById('batch-submit-worklog-btn').style.display = 'none';
+    const container = document.getElementById('worklog-employees-container');
+    const emptyState = document.getElementById('worklog-empty-state');
+    const submitBtn = document.getElementById('batch-submit-worklog-btn');
+    
+    if (container) container.innerHTML = '';
+    if (emptyState) emptyState.style.display = 'block';
+    if (submitBtn) submitBtn.style.display = 'none';
+    
+    // 清空共用資訊
+    const dateInput = document.getElementById('worklog-common-date');
+    const weatherInput = document.getElementById('worklog-common-weather');
+    const locationInput = document.getElementById('worklog-common-location');
+    
+    if (dateInput) dateInput.value = '';
+    if (weatherInput) weatherInput.value = '';
+    if (locationInput) locationInput.value = '';
 }
 // ==================== 快捷功能：複製上一筆記錄 ====================
 function duplicateLastWorklogRow() {
