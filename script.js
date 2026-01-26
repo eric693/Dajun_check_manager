@@ -4353,48 +4353,50 @@ async function initEquipmentTab() {
     await loadEmployeeEquipmentIssue();
 }
 
-/**
- * 載入員工裝備領用記錄
- */
 async function loadEmployeeEquipmentIssue() {
     const loadingEl = document.getElementById('equipment-loading');
     const userName = document.getElementById('user-name')?.textContent || '未知';
-    
+
     document.getElementById('equipment-user-name').textContent = userName;
-    
+
     try {
         if (loadingEl) loadingEl.style.display = 'block';
-        
+
         const token = localStorage.getItem('sessionToken');
-        
-        if (!token) {
-            throw new Error('未登入，請先登入');
-        }
-        
+        if (!token) throw new Error('未登入，請先登入');
+
         const res = await callApifetch(`getEmployeeEquipmentIssue&token=${token}`);
-        
+
         if (loadingEl) loadingEl.style.display = 'none';
-        
+
         if (res.ok) {
-            console.log('✅ API 回傳成功:', res.data);
-            
             const data = res.data;
-            
+
             // 顯示領用日期
             if (data.hasRecord && data.issueDate) {
-                document.getElementById('equipment-issue-date').textContent = 
+                document.getElementById('equipment-issue-date').textContent =
                     new Date(data.issueDate).toLocaleDateString();
             } else {
                 document.getElementById('equipment-issue-date').textContent = '尚未領用';
             }
-            
+
             // 渲染裝備清單
             renderEquipmentList(data.equipmentList);
-            
+
+            // ✅ 顯示總金額（後端有回傳就用）
+            const totalEl = document.getElementById('equipment-total-amount');
+            if (totalEl) {
+                const total = Number(data.totalAmount ?? 0);
+                totalEl.textContent = `$${total}`;
+            } else {
+                // 若你還沒加 HTML 那個 span，不會噴錯
+                console.warn('⚠️ 尚未加入 #equipment-total-amount');
+            }
+
         } else {
             showNotification(res.msg || '載入失敗', 'error');
         }
-        
+
     } catch (error) {
         console.error('❌ 載入失敗:', error);
         if (loadingEl) loadingEl.style.display = 'none';
@@ -4402,25 +4404,23 @@ async function loadEmployeeEquipmentIssue() {
     }
 }
 
-/**
- * 渲染裝備清單
- */
+
 function renderEquipmentList(equipmentList) {
     const tbody = document.getElementById('equipment-list-body');
-    
+
     if (!tbody) {
         console.error('❌ 找不到 equipment-list-body');
         return;
     }
-    
+
     tbody.innerHTML = '';
-    
+
     equipmentList.forEach((item, index) => {
         const row = document.createElement('tr');
-        row.className = index % 2 === 0 
-            ? 'bg-gray-50 dark:bg-gray-700' 
+        row.className = index % 2 === 0
+            ? 'bg-gray-50 dark:bg-gray-700'
             : 'bg-white dark:bg-gray-800';
-        
+
         // 判斷是否為必填項目或公司提供
         let nameDisplay = item.name;
         if (item.name.startsWith('➤')) {
@@ -4428,23 +4428,59 @@ function renderEquipmentList(equipmentList) {
         } else if (item.name.startsWith('◆')) {
             nameDisplay = `<span class="text-blue-600 dark:text-blue-400">${item.name}</span>`;
         }
-        
+
+        const unitPrice = Number(item.unitPrice ?? 0);
+        const quantity = Number(item.quantity ?? 1);
+
         row.innerHTML = `
             <td class="px-4 py-3 text-gray-800 dark:text-white">${nameDisplay}</td>
-            <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">${item.quantity}</td>
+            <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">${quantity}</td>
             <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">${item.unit}</td>
             <td class="px-4 py-3 text-center">
-                <input type="checkbox" 
+                <input type="checkbox"
                        class="equipment-checkbox w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer"
                        data-name="${item.name}"
-                       data-quantity="${item.quantity}"
+                       data-quantity="${quantity}"
+                       data-unitprice="${unitPrice}"
                        ${item.received ? 'checked' : ''}>
             </td>
+            <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">$${unitPrice}</td>
         `;
-        
+
         tbody.appendChild(row);
     });
+
+    // ✅ 勾選即時更新總金額
+    bindEquipmentCheckboxEvents();
+    updateEquipmentTotalAmount();
 }
+
+function bindEquipmentCheckboxEvents() {
+    const checkboxes = document.querySelectorAll('.equipment-checkbox');
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', () => {
+            updateEquipmentTotalAmount();
+        });
+    });
+}
+
+function updateEquipmentTotalAmount() {
+    const totalEl = document.getElementById('equipment-total-amount');
+    if (!totalEl) return; // 你若還沒加 HTML，不會噴錯
+
+    const checkboxes = document.querySelectorAll('.equipment-checkbox');
+    let total = 0;
+
+    checkboxes.forEach(cb => {
+        if (!cb.checked) return;
+        const q = Number(cb.dataset.quantity ?? 1);
+        const p = Number(cb.dataset.unitprice ?? 0);
+        total += q * p;
+    });
+
+    totalEl.textContent = `$${total}`;
+}
+
 
 /**
  * 儲存裝備領用記錄
@@ -4468,7 +4504,7 @@ async function saveEquipmentIssue() {
         checkboxes.forEach(checkbox => {
             receivedItems[checkbox.dataset.name] = checkbox.checked;
         });
-        
+        updateEquipmentTotalAmount();
         console.log('📦 準備儲存:', receivedItems);
         
         const res = await callApifetch(
