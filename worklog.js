@@ -1246,7 +1246,7 @@ async function batchSubmitWorklogs() {
         const contentInput = document.getElementById(`worklog-content-${index}`);
         const noteInput = document.getElementById(`worklog-note-${index}`);
         
-         // ⭐ 修正：從 JSON 屬性取得員工資訊
+        // ⭐ 修正：直接從 allEmployeesList 查詢員工資訊
         const employeeId = employeeSelect?.value;
         
         if (!employeeId) {
@@ -1254,21 +1254,22 @@ async function batchSubmitWorklogs() {
             return;
         }
         
-        const selectedOption = employeeSelect.options[employeeSelect.selectedIndex];
-        const empDataStr = selectedOption?.getAttribute('data-employee');
+        console.log('🔍 查詢員工ID:', employeeId);
+        console.log('📋 員工列表:', allEmployeesList);
         
-        let employeeName = '';
-        let employeeDept = '';
+        // ⭐ 關鍵：直接從全局列表中查找員工資料
+        const employee = allEmployeesList.find(emp => emp.userId === employeeId);
         
-        if (empDataStr) {
-            try {
-                const empData = JSON.parse(empDataStr);
-                employeeName = empData.name || '';
-                employeeDept = empData.dept || '';
-            } catch (e) {
-                console.error('解析員工資料失敗:', e);
-            }
+        if (!employee) {
+            console.error('❌ 找不到員工資料:', employeeId);
+            showNotification(`日誌 #${index}：找不到員工資料`, 'error');
+            return;
         }
+        
+        const employeeName = employee.name || '';
+        const employeeDept = employee.dept || '';
+        
+        console.log('✅ 找到員工:', { employeeName, employeeDept });
         // 取得員工資訊
         // const selectedOption = employeeSelect?.options[employeeSelect.selectedIndex];
         // const employeeId = employeeSelect?.value;
