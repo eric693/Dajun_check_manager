@@ -545,61 +545,73 @@ function setupAgreementCheckboxes() {
     submitBtn.addEventListener('click', submitOnboardingAgreement);
 }
 
-/**
- * 提交切結書
- */
 async function submitOnboardingAgreement() {
-    const submitBtn = document.getElementById('submit-onboarding-btn');
-    
-    if (!confirm('確定要提交入職切結書嗎？提交後將無法修改。')) {
-        return;
-    }
-    
     try {
-        if (submitBtn) {
-            generalButtonState(submitBtn, 'processing', '提交中...');
+        console.log('📝 開始提交入職切結書');
+        
+        const submitBtn = document.getElementById('submit-onboarding-btn');
+        
+        if (!submitBtn) {
+            console.error('找不到提交按鈕');
+            return;
         }
         
-        const token = localStorage.getItem('sessionToken');
+        // 禁用按鈕
+        submitBtn.disabled = true;
+        submitBtn.textContent = '提交中...';
         
-        if (!token) {
-            throw new Error('未登入，請先登入');
-        }
+        // ⭐ 收集所有條款勾選狀態
+        const params = new URLSearchParams({
+            agreeConfidentiality: document.getElementById('agree-confidentiality')?.checked || false,
+            agreeNonCompete: document.getElementById('agree-non-compete')?.checked || false,
+            agreeIpRights: document.getElementById('agree-ip-rights')?.checked || false,
+            agreeLiability: document.getElementById('agree-liability')?.checked || false,
+            agreeProbation: document.getElementById('agree-probation')?.checked || false,
+            agreeEquipment: document.getElementById('agree-equipment')?.checked || false,
+            agreeSafety: document.getElementById('agree-safety')?.checked || false,
+            ipAddress: await getUserIP()
+        });
         
-        // 取得 IP (可選)
-        let ipAddress = 'Unknown';
-        try {
-            const ipRes = await fetch('https://api.ipify.org?format=json');
-            const ipData = await ipRes.json();
-            ipAddress = ipData.ip;
-        } catch (e) {
-            console.log('無法取得 IP');
-        }
+        console.log('📤 提交參數:', params.toString());
         
-        const res = await callApifetch(
-            `submitOnboardingAgreement&token=${token}&agreedTerms=true&ipAddress=${ipAddress}`
-        );
+        const result = await callApifetch(`submitOnboardingAgreement&${params.toString()}`);
         
-        if (res.ok) {
-            showNotification('✅ 切結書已成功提交！', 'success');
+        console.log('📥 API 回應:', result);
+        
+        if (result.ok) {
+            showNotification('✅ 入職切結書已成功提交！', 'success');
             
-            // 重新載入資料
-            await loadEmployeeOnboardingData();
-            
-            // 禁用表單
-            disableOnboardingForm();
+            // 重新載入狀態
+            await loadOnboardingStatus();
         } else {
-            showNotification(res.msg || '提交失敗', 'error');
+            showNotification('❌ ' + result.msg, 'error');
+            
+            // 恢復按鈕
+            submitBtn.disabled = false;
+            submitBtn.textContent = '✍️ 簽署並提交';
         }
         
     } catch (error) {
-        console.error('❌ 提交失敗:', error);
-        showNotification('提交失敗：' + error.message, 'error');
+        console.error('提交失敗:', error);
+        showNotification('❌ 提交失敗，請稍後再試', 'error');
         
-    } finally {
+        const submitBtn = document.getElementById('submit-onboarding-btn');
         if (submitBtn) {
-            generalButtonState(submitBtn, 'idle');
+            submitBtn.disabled = false;
+            submitBtn.textContent = '✍️ 簽署並提交';
         }
+    }
+}
+
+// 輔助函數：獲取用戶 IP（可選）
+async function getUserIP() {
+    try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        return data.ip;
+    } catch (error) {
+        console.log('無法取得 IP:', error);
+        return 'Unknown';
     }
 }
 
