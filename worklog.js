@@ -4,6 +4,13 @@
  * 初始化工作日誌分頁
  */
 async function initWorklogTab() {
+    // 顯示當前使用者名稱
+    const userName = localStorage.getItem('sessionUserName') || '使用者';
+    const userNameEl = document.getElementById('worklog-user-name');
+    if (userNameEl) {
+        userNameEl.textContent = userName;
+    }
+    
     await loadWorklogRecords();
     setupWorklogForm();
 }
@@ -424,6 +431,142 @@ async function loadPendingWorklogs() {
 }
 
 /**
+ * ✅ 新增：載入當月工作日誌統計
+ */
+async function loadWorklogMonthlyStats() {
+    const statsContainer = document.getElementById('worklog-monthly-stats-container');
+    const loadingEl = document.getElementById('worklog-stats-loading');
+    const emptyEl = document.getElementById('worklog-stats-empty');
+    const listEl = document.getElementById('worklog-stats-list');
+    
+    if (!statsContainer) return;
+    
+    try {
+        if (loadingEl) loadingEl.style.display = 'block';
+        if (emptyEl) emptyEl.style.display = 'none';
+        if (listEl) listEl.innerHTML = '';
+        
+        // 取得當前年月
+        const now = new Date();
+        const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        
+        const res = await callApifetch(`getWorklogMonthlyStats&yearMonth=${yearMonth}`);
+        
+        if (loadingEl) loadingEl.style.display = 'none';
+        
+        if (res.ok && res.stats && res.stats.length > 0) {
+            renderWorklogStats(res.stats, yearMonth);
+        } else {
+            if (emptyEl) emptyEl.style.display = 'block';
+        }
+        
+    } catch (error) {
+        console.error('載入工作日誌統計失敗:', error);
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (emptyEl) emptyEl.style.display = 'block';
+    }
+}
+
+/**
+ * ✅ 新增：渲染工作日誌統計
+ */
+function renderWorklogStats(stats, yearMonth) {
+    const listEl = document.getElementById('worklog-stats-list');
+    if (!listEl) return;
+    
+    listEl.innerHTML = '';
+    
+    // 排序：總工時由高到低
+    stats.sort((a, b) => b.totalHours - a.totalHours);
+    
+    // 創建表格
+    const table = document.createElement('table');
+    table.className = 'w-full text-sm';
+    
+    // 表頭
+    const thead = document.createElement('thead');
+    thead.className = 'bg-gray-100 dark:bg-gray-700';
+    thead.innerHTML = `
+        <tr>
+            <th class="px-4 py-2 text-left font-semibold text-gray-700 dark:text-gray-300">員工姓名</th>
+            <th class="px-4 py-2 text-center font-semibold text-gray-700 dark:text-gray-300">部門</th>
+            <th class="px-4 py-2 text-center font-semibold text-gray-700 dark:text-gray-300">填寫天數</th>
+            <th class="px-4 py-2 text-center font-semibold text-gray-700 dark:text-gray-300">總工時</th>
+            <th class="px-4 py-2 text-center font-semibold text-gray-700 dark:text-gray-300">已核准工時</th>
+        </tr>
+    `;
+    table.appendChild(thead);
+    
+    // 表身
+    const tbody = document.createElement('tbody');
+    tbody.className = 'divide-y divide-gray-200 dark:divide-gray-600';
+    
+    stats.forEach((stat, index) => {
+        const tr = document.createElement('tr');
+        tr.className = index % 2 === 0 
+            ? 'bg-white dark:bg-gray-800' 
+            : 'bg-gray-50 dark:bg-gray-700/50';
+        
+        tr.innerHTML = `
+            <td class="px-4 py-3 text-gray-800 dark:text-white">
+                <div class="flex items-center">
+                    <span class="font-medium">${stat.userName}</span>
+                </div>
+            </td>
+            <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-400">
+                <span class="px-2 py-1 text-xs rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300">
+                    ${stat.department || '未分類'}
+                </span>
+            </td>
+            <td class="px-4 py-3 text-center">
+                <span class="font-semibold text-blue-600 dark:text-blue-400">${stat.totalDays}</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">天</span>
+            </td>
+            <td class="px-4 py-3 text-center">
+                <span class="font-semibold text-green-600 dark:text-green-400">${stat.totalHours}</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">小時</span>
+            </td>
+            <td class="px-4 py-3 text-center">
+                <span class="font-semibold text-purple-600 dark:text-purple-400">${stat.approvedHours}</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">小時</span>
+            </td>
+        `;
+        
+        tbody.appendChild(tr);
+    });
+    
+    table.appendChild(tbody);
+    listEl.appendChild(table);
+    
+    // 新增總計行
+    const totalRow = document.createElement('div');
+    totalRow.className = 'mt-4 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-700';
+    
+    const totalDays = stats.reduce((sum, s) => sum + s.totalDays, 0);
+    const totalHours = stats.reduce((sum, s) => sum + s.totalHours, 0);
+    const totalApproved = stats.reduce((sum, s) => sum + s.approvedHours, 0);
+    
+    totalRow.innerHTML = `
+        <div class="grid grid-cols-3 gap-4 text-center">
+            <div>
+                <p class="text-xs text-indigo-600 dark:text-indigo-400 mb-1">總填寫天數</p>
+                <p class="text-2xl font-bold text-indigo-700 dark:text-indigo-300">${totalDays}</p>
+            </div>
+            <div>
+                <p class="text-xs text-indigo-600 dark:text-indigo-400 mb-1">總工時</p>
+                <p class="text-2xl font-bold text-indigo-700 dark:text-indigo-300">${totalHours}</p>
+            </div>
+            <div>
+                <p class="text-xs text-indigo-600 dark:text-indigo-400 mb-1">已核准工時</p>
+                <p class="text-2xl font-bold text-indigo-700 dark:text-indigo-300">${totalApproved}</p>
+            </div>
+        </div>
+    `;
+    
+    listEl.appendChild(totalRow);
+}
+
+/**
  * 渲染待審核的工作日誌（完全多語言版）
  */
 function renderPendingWorklogs(worklogs) {
@@ -555,6 +698,7 @@ async function approveWorklog(logId) {
         if (res.ok) {
             showNotification(t('WORKLOG_APPROVE_SUCCESS') || '工作日誌已核准', 'success');
             await loadPendingWorklogs();
+            await loadWorklogMonthlyStats(); // 刷新統計
         } else {
             showNotification(res.msg || t('APPROVE_FAILED') || '核准失敗', 'error');
         }
@@ -585,6 +729,7 @@ async function rejectWorklog(logId) {
         if (res.ok) {
             showNotification(t('WORKLOG_REJECT_SUCCESS') || '工作日誌已拒絕', 'success');
             await loadPendingWorklogs();
+            await loadWorklogMonthlyStats(); // 刷新統計
         } else {
             showNotification(res.msg || t('REJECT_FAILED') || '拒絕失敗', 'error');
         }
