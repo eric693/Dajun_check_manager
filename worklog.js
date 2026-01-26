@@ -1246,11 +1246,22 @@ async function batchSubmitWorklogs() {
         const contentInput = document.getElementById(`worklog-content-${index}`);
         const noteInput = document.getElementById(`worklog-note-${index}`);
         
+         // ⭐ 修正：安全地取得員工資訊
+         const employeeId = employeeSelect?.value;
+        
+         if (!employeeId) {
+             showNotification(`日誌 #${index}：請選擇員工`, 'error');
+             return;
+         }
+         
+         const selectedOption = employeeSelect.options[employeeSelect.selectedIndex];
+         const employeeName = selectedOption?.getAttribute('data-name') || '';
+         const employeeDept = selectedOption?.getAttribute('data-dept') || '';
         // 取得員工資訊
-        const selectedOption = employeeSelect?.options[employeeSelect.selectedIndex];
-        const employeeId = employeeSelect?.value;
-        const employeeName = selectedOption?.dataset.name || '';
-        const employeeDept = selectedOption?.dataset.dept || '';
+        // const selectedOption = employeeSelect?.options[employeeSelect.selectedIndex];
+        // const employeeId = employeeSelect?.value;
+        // const employeeName = selectedOption?.dataset.name || '';
+        // const employeeDept = selectedOption?.dataset.dept || '';
         
         const serialNumber = serialInput?.value || '';
         const hours = parseFloat(hoursInput?.value);
