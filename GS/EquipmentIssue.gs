@@ -52,7 +52,7 @@ function handleGetEquipmentList(params) {
     return {
       ok: true,
       data: EQUIPMENT_LIST,
-      note: '◆為公司提供，無須購買，毀損可與會管換領'
+      note: '◆為公司提供，無須購買，毀損可與倉管換領'
     };
     
   } catch (error) {
