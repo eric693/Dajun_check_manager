@@ -5,6 +5,26 @@ let allEmployeesList = [];       // 所有員工列表
 /**
  * ✅ 初始化工作日誌標籤（批量模式）
  */
+// async function initWorklogTab() {
+//     console.log('═══════════════════════════════════════');
+//     console.log('📝 初始化工作日誌標籤（批量模式）');
+//     console.log('═══════════════════════════════════════');
+    
+//     // Step 1: 載入員工列表
+//     console.log('📡 Step 1: 載入員工列表');
+//     await loadAllEmployees();
+    
+//     // Step 2: 載入已提交的工作日誌記錄
+//     console.log('📡 Step 2: 載入工作日誌記錄');
+//     await loadWorklogRecords();
+    
+//     // Step 3: 新增第一行員工日誌欄位
+//     console.log('📡 Step 3: 新增第一行員工日誌欄位');
+//     addEmployeeWorklogRow();
+    
+//     console.log('✅ 工作日誌標籤初始化完成');
+//     console.log('═══════════════════════════════════════');
+// }
 async function initWorklogTab() {
     console.log('═══════════════════════════════════════');
     console.log('📝 初始化工作日誌標籤（批量模式）');
@@ -18,14 +38,12 @@ async function initWorklogTab() {
     console.log('📡 Step 2: 載入工作日誌記錄');
     await loadWorklogRecords();
     
-    // Step 3: 新增第一行員工日誌欄位
-    console.log('📡 Step 3: 新增第一行員工日誌欄位');
-    addEmployeeWorklogRow();
+    // ⭐ 移除自動新增第一行的邏輯，改為完全手動
+    console.log('✅ 等待使用者手動新增員工記錄');
     
     console.log('✅ 工作日誌標籤初始化完成');
     console.log('═══════════════════════════════════════');
 }
-
 
 /**
  * 設定工作日誌表單
