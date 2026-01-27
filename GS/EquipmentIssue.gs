@@ -4,11 +4,11 @@
 const SHEET_EQUIPMENT_ISSUE = '入職裝備領用表';
 
 const EQUIPMENT_LIST = [
-  { name: '➤安全帽', quantity: 1, unit: '個', category: 'required', unitPrice: 200 },
-  { name: '➤直二格釘袋', quantity: 1, unit: '個', category: 'required', unitPrice: 600 },
-  { name: '➤S腰帶', quantity: 1, unit: '條', category: 'required', unitPrice: 200 },
-  { name: '➤工具收納袋', quantity: 1, unit: '個', category: 'required', unitPrice: 500 },
-  { name: '➤捲尺快扣', quantity: 1, unit: '個', category: 'required', unitPrice: 500 },
+  { name: '✦安全帽', quantity: 1, unit: '個', category: 'required', unitPrice: 200 },
+  { name: '✦直二格釘袋', quantity: 1, unit: '個', category: 'required', unitPrice: 600 },
+  { name: '✦S腰帶', quantity: 1, unit: '條', category: 'required', unitPrice: 200 },
+  { name: '✦工具收納袋', quantity: 1, unit: '個', category: 'required', unitPrice: 500 },
+  { name: '✦捲尺快扣', quantity: 1, unit: '個', category: 'required', unitPrice: 500 },
 
   { name: '鐵鎚', quantity: 1, unit: '個', category: 'normal', unitPrice: 750 },
   { name: '槌架', quantity: 1, unit: '個', category: 'normal', unitPrice: 200 },
@@ -331,8 +331,8 @@ function testEquipmentIssueAPI() {
   const saveResult = handleSaveEquipmentIssue({
     token: testToken,
     receivedItems: encodeURIComponent(JSON.stringify({
-      '➤安全帽': true,
-      '➤直二格釘袋': true,
+      '✦安全帽': true,
+      '✦直二格釘袋': true,
       '鐵鎚': true
     })),
     note: '測試領用'
