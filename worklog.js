@@ -265,16 +265,47 @@ function renderWorklogRecords(worklogs) {
         let statusIcon = '';
         let actionButtons = '';
         
+        // switch(log.status) {
+        //     case 'PENDING':
+        //         statusClass = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
+        //         statusText = safeTranslate('STATUS_PENDING', '待審核');
+        //         statusIcon = '⏳';
+        //         actionButtons = `
+        //             <button onclick="editWorklog('${log.id}')" 
+        //                     class="px-3 py-1.5 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors">
+        //                 ✏️ ${btnEdit}
+        //             </button>
+        //             <button onclick="deleteWorklog('${log.id}')" 
+        //                     class="px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors">
+        //                 🗑️ ${btnDelete}
+        //             </button>
+        //         `;
+        //         break;
+        //     case 'APPROVED':
+        //         statusClass = 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+        //         statusText = safeTranslate('STATUS_APPROVED', '已核准');
+        //         statusIcon = '✅';
+        //         break;
+        //     case 'REJECTED':
+        //         statusClass = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+        //         statusText = safeTranslate('STATUS_REJECTED', '已拒絕');
+        //         statusIcon = '❌';
+        //         actionButtons = `
+        //             <button onclick="editWorklog('${log.id}')" 
+        //                     class="px-3 py-1.5 text-sm bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-colors">
+        //                 🔄 ${btnResubmit}
+        //             </button>
+        //         `;
+        //         break;
+        // }
+
         switch(log.status) {
             case 'PENDING':
                 statusClass = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
                 statusText = safeTranslate('STATUS_PENDING', '待審核');
                 statusIcon = '⏳';
+                // ⭐ 只保留刪除按鈕
                 actionButtons = `
-                    <button onclick="editWorklog('${log.id}')" 
-                            class="px-3 py-1.5 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors">
-                        ✏️ ${btnEdit}
-                    </button>
                     <button onclick="deleteWorklog('${log.id}')" 
                             class="px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors">
                         🗑️ ${btnDelete}
@@ -285,15 +316,17 @@ function renderWorklogRecords(worklogs) {
                 statusClass = 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
                 statusText = safeTranslate('STATUS_APPROVED', '已核准');
                 statusIcon = '✅';
+                // ⭐ 已核准的記錄不顯示任何按鈕
                 break;
             case 'REJECTED':
                 statusClass = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
                 statusText = safeTranslate('STATUS_REJECTED', '已拒絕');
                 statusIcon = '❌';
+                // ⭐ 已拒絕的記錄也只保留刪除按鈕
                 actionButtons = `
-                    <button onclick="editWorklog('${log.id}')" 
-                            class="px-3 py-1.5 text-sm bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-colors">
-                        🔄 ${btnResubmit}
+                    <button onclick="deleteWorklog('${log.id}')" 
+                            class="px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors">
+                        🗑️ ${btnDelete}
                     </button>
                 `;
                 break;
@@ -342,40 +375,40 @@ function renderWorklogRecords(worklogs) {
 /**
  * 編輯工作日誌
  */
-async function editWorklog(logId) {
-    try {
-        const res = await callApifetch(`getWorklogDetail&id=${logId}`);
+// async function editWorklog(logId) {
+//     try {
+//         const res = await callApifetch(`getWorklogDetail&id=${logId}`);
         
-        if (res.ok && res.worklog) {
-            const log = res.worklog;
+//         if (res.ok && res.worklog) {
+//             const log = res.worklog;
             
-            const dateInput = document.getElementById('worklog-date');
-            const hoursInput = document.getElementById('worklog-hours');
-            const contentInput = document.getElementById('worklog-content');
+//             const dateInput = document.getElementById('worklog-date');
+//             const hoursInput = document.getElementById('worklog-hours');
+//             const contentInput = document.getElementById('worklog-content');
             
-            if (dateInput) dateInput.value = log.date;
-            if (hoursInput) hoursInput.value = log.hours;
-            if (contentInput) contentInput.value = log.content;
+//             if (dateInput) dateInput.value = log.date;
+//             if (hoursInput) hoursInput.value = log.hours;
+//             if (contentInput) contentInput.value = log.content;
             
-            document.getElementById('worklog-form-container')?.scrollIntoView({ 
-                behavior: 'smooth',
-                block: 'start'
-            });
+//             document.getElementById('worklog-form-container')?.scrollIntoView({ 
+//                 behavior: 'smooth',
+//                 block: 'start'
+//             });
             
-            const submitBtn = document.getElementById('submit-worklog-btn');
-            if (submitBtn) {
-                submitBtn.textContent = t('BTN_UPDATE') || '更新';
-                submitBtn.onclick = () => updateWorklog(logId);
-            }
+//             const submitBtn = document.getElementById('submit-worklog-btn');
+//             if (submitBtn) {
+//                 submitBtn.textContent = t('BTN_UPDATE') || '更新';
+//                 submitBtn.onclick = () => updateWorklog(logId);
+//             }
             
-            showNotification(t('WORKLOG_EDIT_MODE') || '進入編輯模式', 'info');
-        }
+//             showNotification(t('WORKLOG_EDIT_MODE') || '進入編輯模式', 'info');
+//         }
         
-    } catch (error) {
-        console.error('載入工作日誌失敗:', error);
-        showNotification(t('LOAD_FAILED') || '載入失敗', 'error');
-    }
-}
+//     } catch (error) {
+//         console.error('載入工作日誌失敗:', error);
+//         showNotification(t('LOAD_FAILED') || '載入失敗', 'error');
+//     }
+// }
 
 /**
  * 更新工作日誌
