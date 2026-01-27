@@ -6,8 +6,8 @@ const SHEET_SALARY_CONFIG_ENHANCED = "員工薪資設定";
 const SHEET_MONTHLY_SALARY_ENHANCED = "月薪資記錄";
 
 // 台灣法定最低薪資（2025）
-// const MIN_MONTHLY_SALARY = 28590;  // 月薪
-// const MIN_HOURLY_SALARY = 190;     // 時薪
+// const MIN_MONTHLY_SALARY = 29500;  // 月薪
+// const MIN_HOURLY_SALARY = 196;     // 時薪
 
 // 加班費率
 const OVERTIME_RATES = {
@@ -117,9 +117,8 @@ function jsonResponse(ok, data, message, code) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 // ==================== 試算表管理 ====================
-
 /**
- * ✅ 取得或建立員工薪資設定試算表（完整版）
+ * ✅ 修改：getEmployeeSalarySheet - 新增部門欄位
  */
 function getEmployeeSalarySheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -129,22 +128,22 @@ function getEmployeeSalarySheet() {
     sheet = ss.insertSheet(SHEET_SALARY_CONFIG_ENHANCED);
     
     const headers = [
-      // 基本資訊 (6欄: A-F)
-      "員工ID", "員工姓名", "身分證字號", "員工類型", "薪資類型", "基本薪資",
+      // 基本資訊 (7欄: A-G) ⭐ 新增「部門」欄位
+      "員工ID", "員工姓名", "身分證字號", "員工類型", "部門", "薪資類型", "基本薪資",
       
-      // 固定津貼項目 (6欄: G-L)
+      // 固定津貼項目 (6欄: H-M)
       "職務加給", "伙食費", "交通補助", "全勤獎金", "業績獎金", "其他津貼",
       
-      // 銀行資訊 (4欄: M-P)
+      // 銀行資訊 (4欄: N-Q)
       "銀行代碼", "銀行帳號", "到職日期", "發薪日",
       
-      // 法定扣款 (6欄: Q-V)
+      // 法定扣款 (6欄: R-W)
       "勞退自提率(%)", "勞保費", "健保費", "就業保險費", "勞退自提", "所得稅",
       
-      // 其他扣款 (4欄: W-Z)
+      // 其他扣款 (4欄: X-AA)
       "福利金扣款", "宿舍費用", "團保費用", "其他扣款",
       
-      // 系統欄位 (3欄: AA-AC)
+      // 系統欄位 (3欄: AB-AD)
       "狀態", "備註", "最後更新時間"
     ];
     
@@ -154,11 +153,12 @@ function getEmployeeSalarySheet() {
     sheet.getRange(1, 1, 1, headers.length).setFontColor("#ffffff");
     sheet.setFrozenRows(1);
     
-    Logger.log("✅ 建立員工薪資設定試算表（完整版）");
+    Logger.log("✅ 建立員工薪資設定試算表（含部門欄位）");
   }
   
   return sheet;
 }
+
 
 function rebuildMonthlySalarySheet() {
      // 刪除舊表（如果存在）
@@ -175,7 +175,7 @@ function rebuildMonthlySalarySheet() {
    }
 
 /**
- * ✅ 取得或建立月薪資記錄試算表（完整版）
+ * ✅ 修改：getMonthlySalarySheetEnhanced - 新增部門欄位
  */
 function getMonthlySalarySheetEnhanced() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -185,9 +185,9 @@ function getMonthlySalarySheetEnhanced() {
     sheet = ss.insertSheet(SHEET_MONTHLY_SALARY_ENHANCED);
     
     const headers = [
-      // 基本資訊
+      // 基本資訊 ⭐ 新增「部門」欄位
       "薪資單ID", "員工ID", "員工姓名", "年月",
-      "薪資類型", "時薪", "工作時數", "總加班時數", // ⭐ 新增
+      "薪資類型", "員工類型", "部門", "時薪", "工作時數", "總加班時數",
       
       // 應發項目
       "基本薪資", "職務加給", "伙食費", "交通補助", "全勤獎金", "業績獎金", "其他津貼",
@@ -215,20 +215,21 @@ function getMonthlySalarySheetEnhanced() {
     sheet.getRange(1, 1, 1, headers.length).setFontColor("#ffffff");
     sheet.setFrozenRows(1);
     
-    Logger.log("✅ 建立月薪資記錄試算表（完整版）");
+    Logger.log("✅ 建立月薪資記錄試算表（含部門欄位）");
   }
   
   return sheet;
 }
 
+
 // ==================== 薪資設定功能 ====================
 
 /**
- * ✅ 設定員工薪資資料（完整版 - 修正版）
+ * ✅ 修改：setEmployeeSalaryTW - 新增部門參數
  */
 function setEmployeeSalaryTW(salaryData) {
   try {
-    Logger.log('💰 開始設定員工薪資（完整版 - 修正版）');
+    Logger.log('💰 開始設定員工薪資（含部門欄位）');
     Logger.log('📥 收到的資料: ' + JSON.stringify(salaryData, null, 2));
     
     const sheet = getEmployeeSalarySheet();
@@ -250,56 +251,53 @@ function setEmployeeSalaryTW(salaryData) {
     
     const now = new Date();
     
-    // ⭐ 修正：確保順序與 Sheet 欄位完全一致
+    // ⭐ 修正：確保順序與 Sheet 欄位完全一致（含部門）
     const row = [
-      // A-F: 基本資訊 (6欄)
+      // A-G: 基本資訊 (7欄) ⭐ 新增「部門」
       String(salaryData.employeeId).trim(),              // A: 員工ID
       String(salaryData.employeeName).trim(),            // B: 員工姓名
       String(salaryData.idNumber || "").trim(),          // C: 身分證字號
       String(salaryData.employeeType || "正職").trim(),  // D: 員工類型
-      String(salaryData.salaryType || "月薪").trim(),    // E: 薪資類型
-      parseFloat(salaryData.baseSalary) || 0,            // F: 基本薪資
+      String(salaryData.department || "員工").trim(),    // E: 部門 ⭐ 新增
+      String(salaryData.salaryType || "月薪").trim(),    // F: 薪資類型
+      parseFloat(salaryData.baseSalary) || 0,            // G: 基本薪資
       
-      // G-L: 固定津貼項目 (6欄)
-      parseFloat(salaryData.positionAllowance) || 0,     // G: 職務加給
-      parseFloat(salaryData.mealAllowance) || 0,         // H: 伙食費
-      parseFloat(salaryData.transportAllowance) || 0,    // I: 交通補助
-      parseFloat(salaryData.attendanceBonus) || 0,       // J: 全勤獎金
-      parseFloat(salaryData.performanceBonus) || 0,      // K: 業績獎金
-      parseFloat(salaryData.otherAllowances) || 0,       // L: 其他津貼
+      // H-M: 固定津貼項目 (6欄)
+      parseFloat(salaryData.positionAllowance) || 0,     // H: 職務加給
+      parseFloat(salaryData.mealAllowance) || 0,         // I: 伙食費
+      parseFloat(salaryData.transportAllowance) || 0,    // J: 交通補助
+      parseFloat(salaryData.attendanceBonus) || 0,       // K: 全勤獎金
+      parseFloat(salaryData.performanceBonus) || 0,      // L: 業績獎金
+      parseFloat(salaryData.otherAllowances) || 0,       // M: 其他津貼
       
-      // M-P: 銀行資訊 (4欄)
-      String(salaryData.bankCode || "").trim(),          // M: 銀行代碼
-      String(salaryData.bankAccount || "").trim(),       // N: 銀行帳號
-      salaryData.hireDate || "",                         // O: 到職日期
-      String(salaryData.paymentDay || "5").trim(),       // P: 發薪日
+      // N-Q: 銀行資訊 (4欄)
+      String(salaryData.bankCode || "").trim(),          // N: 銀行代碼
+      String(salaryData.bankAccount || "").trim(),       // O: 銀行帳號
+      salaryData.hireDate || "",                         // P: 到職日期
+      String(salaryData.paymentDay || "5").trim(),       // Q: 發薪日
       
-      // Q-V: 法定扣款 (6欄)
-      parseFloat(salaryData.pensionSelfRate) || 0,       // Q: 勞退自提率(%)
-      parseFloat(salaryData.laborFee) || 0,              // R: 勞保費
-      parseFloat(salaryData.healthFee) || 0,             // S: 健保費
-      parseFloat(salaryData.employmentFee) || 0,         // T: 就業保險費
-      parseFloat(salaryData.pensionSelf) || 0,           // U: 勞退自提
-      parseFloat(salaryData.incomeTax) || 0,             // V: 所得稅
+      // R-W: 法定扣款 (6欄)
+      parseFloat(salaryData.pensionSelfRate) || 0,       // R: 勞退自提率(%)
+      parseFloat(salaryData.laborFee) || 0,              // S: 勞保費
+      parseFloat(salaryData.healthFee) || 0,             // T: 健保費
+      parseFloat(salaryData.employmentFee) || 0,         // U: 就業保險費
+      parseFloat(salaryData.pensionSelf) || 0,           // V: 勞退自提
+      parseFloat(salaryData.incomeTax) || 0,             // W: 所得稅
       
-      // W-Z: 其他扣款 (4欄)
-      parseFloat(salaryData.welfareFee) || 0,            // W: 福利金扣款
-      parseFloat(salaryData.dormitoryFee) || 0,          // X: 宿舍費用
-      parseFloat(salaryData.groupInsurance) || 0,        // Y: 團保費用
-      parseFloat(salaryData.otherDeductions) || 0,       // Z: 其他扣款
+      // X-AA: 其他扣款 (4欄)
+      parseFloat(salaryData.welfareFee) || 0,            // X: 福利金扣款
+      parseFloat(salaryData.dormitoryFee) || 0,          // Y: 宿舍費用
+      parseFloat(salaryData.groupInsurance) || 0,        // Z: 團保費用
+      parseFloat(salaryData.otherDeductions) || 0,       // AA: 其他扣款
       
-      // AA-AC: 系統欄位 (3欄)
-      "在職",                                             // AA: 狀態
-      String(salaryData.note || "").trim(),              // AB: 備註
-      now                                                 // AC: 最後更新時間
+      // AB-AD: 系統欄位 (3欄)
+      "在職",                                             // AB: 狀態
+      String(salaryData.note || "").trim(),              // AC: 備註
+      now                                                 // AD: 最後更新時間
     ];
     
     Logger.log(`📝 準備寫入的 row 陣列長度: ${row.length}`);
     Logger.log(`📋 Sheet 標題欄位數: ${data[0].length}`);
-    
-    if (row.length !== data[0].length) {
-      Logger.log(`⚠️ 警告：row 長度 (${row.length}) 與 Sheet 欄位數 (${data[0].length}) 不一致`);
-    }
     
     if (rowIndex > 0) {
       sheet.getRange(rowIndex, 1, 1, row.length).setValues([row]);
@@ -318,11 +316,6 @@ function setEmployeeSalaryTW(salaryData) {
     }
 
     return { success: true, message: "薪資設定成功" };
-    // 同步到月薪資記錄
-    // const currentYearMonth = Utilities.formatDate(now, "Asia/Taipei", "yyyy-MM");
-    // syncSalaryToMonthlyRecord(salaryData.employeeId, currentYearMonth);
-    
-    // return { success: true, message: "薪資設定成功" };
     
   } catch (error) {
     Logger.log("❌ 設定薪資失敗: " + error);
@@ -553,6 +546,9 @@ function getEmployeeMonthlyOvertime(employeeId, yearMonth) {
   }
 }
 
+/**
+ * ✅ 修改：saveMonthlySalary - 新增部門欄位
+ */
 function saveMonthlySalary(salaryData) {
   try {
     const sheet = getMonthlySalarySheetEnhanced();
@@ -567,51 +563,75 @@ function saveMonthlySalary(salaryData) {
     
     const salaryId = `SAL-${normalizedYearMonth}-${salaryData.employeeId}`;
     
-    // ⭐⭐⭐ 加強版：支援三種可能的欄位名稱
-    let salaryType = '月薪'; // 預設值
+    // ⭐⭐⭐ 處理薪資類型
+    let salaryType = '月薪';
     
-    // 優先順序 1: 英文欄位 (來自計算函數)
     if (salaryData.salaryType && String(salaryData.salaryType).trim() !== '') {
       salaryType = String(salaryData.salaryType).trim();
-      Logger.log(`✅ 使用英文欄位 salaryType: "${salaryType}"`);
     } 
-    // 優先順序 2: 中文欄位 (來自 Sheet 查詢)
     else if (salaryData['薪資類型'] && String(salaryData['薪資類型']).trim() !== '') {
       salaryType = String(salaryData['薪資類型']).trim();
-      Logger.log(`✅ 使用中文欄位 薪資類型: "${salaryType}"`);
     }
-    // 優先順序 3: 檢查員工設定
     else {
-      Logger.log(`⚠️ 兩種欄位都是空的，嘗試從員工設定讀取...`);
       const configResult = getEmployeeSalaryTW(salaryData.employeeId || salaryData['員工ID']);
       if (configResult.success && configResult.data) {
         salaryType = String(configResult.data['薪資類型'] || '月薪').trim();
-        Logger.log(`✅ 從員工設定讀取: "${salaryType}"`);
+      }
+    }
+    
+    // ⭐⭐⭐ 處理員工類型
+    let employeeType = '正職';
+    
+    if (salaryData.employeeType && String(salaryData.employeeType).trim() !== '') {
+      employeeType = String(salaryData.employeeType).trim();
+    }
+    else if (salaryData['員工類型'] && String(salaryData['員工類型']).trim() !== '') {
+      employeeType = String(salaryData['員工類型']).trim();
+    }
+    else {
+      const configResult = getEmployeeSalaryTW(salaryData.employeeId || salaryData['員工ID']);
+      if (configResult.success && configResult.data) {
+        employeeType = String(configResult.data['員工類型'] || '正職').trim();
+      }
+    }
+    
+    // ⭐⭐⭐ 新增：處理部門
+    let department = '員工';
+    
+    if (salaryData.department && String(salaryData.department).trim() !== '') {
+      department = String(salaryData.department).trim();
+    }
+    else if (salaryData['部門'] && String(salaryData['部門']).trim() !== '') {
+      department = String(salaryData['部門']).trim();
+    }
+    else {
+      const configResult = getEmployeeSalaryTW(salaryData.employeeId || salaryData['員工ID']);
+      if (configResult.success && configResult.data) {
+        department = String(configResult.data['部門'] || '員工').trim();
       }
     }
     
     Logger.log(`💾 saveMonthlySalary 最終儲存:`);
     Logger.log(`   - salaryId: ${salaryId}`);
-    Logger.log(`   - salaryType (英文): "${salaryData.salaryType}"`);
-    Logger.log(`   - 薪資類型 (中文): "${salaryData['薪資類型']}"`);
-    Logger.log(`   - 最終值: "${salaryType}"`);
-    Logger.log(`   - 資料來源: ${JSON.stringify(Object.keys(salaryData))}`);
+    Logger.log(`   - 薪資類型: "${salaryType}"`);
+    Logger.log(`   - 員工類型: "${employeeType}"`);
+    Logger.log(`   - 部門: "${department}"`);  // ⭐ 新增日誌
     
     const row = [
-      // 基本資訊
+      // 基本資訊 ⭐ 新增「部門」
       salaryId,
       salaryData.employeeId || salaryData['員工ID'],
       salaryData.employeeName || salaryData['員工姓名'],
       normalizedYearMonth,
-      
-      // ⭐⭐⭐ 使用處理後的 salaryType 變數
       salaryType,
+      employeeType,
+      department,  // ⭐ 新增：部門
       
       salaryData.hourlyRate || salaryData['時薪'] || 0,
       salaryData.totalWorkHours || salaryData['工作時數'] || 0,
       salaryData.totalOvertimeHours || salaryData['總加班時數'] || 0,
       
-      // ... 其餘欄位保持不變
+      // 應發項目
       salaryData.baseSalary || salaryData['基本薪資'] || 0,
       salaryData.positionAllowance || salaryData['職務加給'] || 0,
       salaryData.mealAllowance || salaryData['伙食費'] || 0,
@@ -658,14 +678,14 @@ function saveMonthlySalary(salaryData) {
       if (data[i][0] === salaryId) {
         sheet.getRange(i + 1, 1, 1, row.length).setValues([row]);
         found = true;
-        Logger.log(`✅ 更新薪資單: ${salaryId}, 薪資類型: ${salaryType}`);
+        Logger.log(`✅ 更新薪資單: ${salaryId}, 部門: ${department}`);
         break;
       }
     }
     
     if (!found) {
       sheet.appendRow(row);
-      Logger.log(`✅ 新增薪資單: ${salaryId}, 薪資類型: ${salaryType}`);
+      Logger.log(`✅ 新增薪資單: ${salaryId}, 部門: ${department}`);
     }
     
     return { success: true, salaryId: salaryId, message: "薪資單儲存成功" };
@@ -677,6 +697,56 @@ function saveMonthlySalary(salaryData) {
   }
 }
 
+function testEricEmployeeType() {
+  const employeeId = 'U1771fd65da16e2f2000a3c3805fbe256'; // Eric
+  const yearMonth = '2026-01';
+  
+  // 1. 檢查員工設定中的員工類型
+  const config = getEmployeeSalaryTW(employeeId);
+  Logger.log('📋 員工設定:');
+  Logger.log(`   員工類型: "${config.data['員工類型']}"`);
+  
+  // 2. 計算薪資
+  const result = calculateMonthlySalary(employeeId, yearMonth);
+  
+  if (result.success) {
+    Logger.log('💰 計算結果:');
+    Logger.log(`   employeeType: "${result.data.employeeType}"`);
+    Logger.log(`   salaryType: "${result.data.salaryType}"`);
+    Logger.log(`   totalWorkHours: ${result.data.totalWorkHours}`);
+    
+    // 3. 檢查是否使用工作日誌
+    const isTeamMember = result.data.employeeType === '組員' || result.data.employeeType === '組長';
+    Logger.log(`   isTeamMember: ${isTeamMember}`);
+    Logger.log(`   預期工時來源: ${isTeamMember ? '工作日誌' : '打卡記錄'}`);
+  } else {
+    Logger.log('❌ 計算失敗:', result.message);
+  }
+}
+
+function debugEmployeeType() {
+  const employeeId = 'U1771fd65da16e2f2000a3c3805fbe256'; // Eric 的 ID
+  const yearMonth = '2026-01';
+  
+  // 1. 檢查員工設定
+  const config = getEmployeeSalaryTW(employeeId);
+  Logger.log('📋 員工設定:');
+  Logger.log(`   員工類型: "${config.data['員工類型']}"`);
+  
+  // 2. 檢查薪資記錄
+  const salary = getMySalary(employeeId, yearMonth);
+  Logger.log('💰 薪資記錄:');
+  Logger.log(`   員工類型: "${salary.data['員工類型']}"`);
+  
+  // 3. 重新計算
+  const calculated = calculateMonthlySalary(employeeId, yearMonth);
+  Logger.log('🧮 計算結果:');
+  Logger.log(`   員工類型: "${calculated.data.employeeType}"`);
+  
+  // 4. 儲存
+  const saved = saveMonthlySalary(calculated.data);
+  Logger.log('💾 儲存結果: ' + saved.success);
+}
 /**
  * ✅ API 入口：儲存月薪資記錄（接收 query string 參數）
  */
@@ -1041,23 +1111,38 @@ function calculateHourlySalary(employeeId, yearMonth) {
     const config = salaryConfig.data;
     const hourlyRate = parseFloat(config['基本薪資']) || 0; // 時薪
     
+    // ⭐⭐⭐ 關鍵修改：從「部門」判斷工時來源
+    const department = config['部門'] || '員工';
+    const useWorklog = (department === '組長' || department === '組員');
+    
     Logger.log(`💵 時薪: $${hourlyRate}`);
+    Logger.log(`📋 部門: ${department}`);
+    Logger.log(`⚙️ 工時來源: ${useWorklog ? '工作日誌' : '打卡記錄'}`);
     
-    // 2. ⭐ 取得該月份的打卡記錄
-    const attendanceRecords = getEmployeeMonthlyAttendanceInternal(employeeId, yearMonth);
-    Logger.log(`📋 找到 ${attendanceRecords.length} 筆打卡記錄`);
-    
-    // 3. 計算工作時數
+    // 2. 根據部門選擇工時來源
     let totalWorkHours = 0;
-    
-    attendanceRecords.forEach(record => {
-      if (record.workHours > 0) {
-        totalWorkHours += record.workHours;
-        Logger.log(`   ${record.date}: ${record.punchIn} ~ ${record.punchOut} = ${record.workHours.toFixed(2)}h`);
-      }
-    });
 
-    Logger.log(`⏱️ 總工作時數: ${totalWorkHours.toFixed(1)}h`);
+    if (useWorklog) {
+      // ⭐ 組長/組員：使用工作日誌
+      Logger.log('💼 使用工作日誌計算工時');
+      totalWorkHours = getWorkHoursFromWorklog(employeeId, yearMonth);
+    } else {
+      // ⭐ 其他部門：使用打卡記錄
+      Logger.log('💼 使用打卡記錄計算工時');
+      const attendanceRecords = getEmployeeMonthlyAttendanceInternal(employeeId, yearMonth);
+      Logger.log(`📋 找到 ${attendanceRecords.length} 筆打卡記錄`);
+      
+      attendanceRecords.forEach(record => {
+        if (record.workHours > 0) {
+          totalWorkHours += record.workHours;
+          Logger.log(`   ${record.date}: ${record.punchIn} ~ ${record.punchOut} = ${record.workHours.toFixed(2)}h`);
+        }
+      });
+    }
+
+    const totalWorkHoursInt = Math.floor(totalWorkHours);
+
+    Logger.log(`⏱️ 總工作時數: ${totalWorkHoursInt}h`);
     
     // 4. 計算基本薪資（工作時數 × 時薪）
     const basePay = totalWorkHours * hourlyRate;
@@ -1187,7 +1272,7 @@ function calculateHourlySalary(employeeId, yearMonth) {
     let incomeTax = 0;
     
     // ⭐ 如果月總薪資達到基本工資，才扣保險
-    if (grossSalary >= 28590) {
+    if (grossSalary >= 29500) {
       const insuredSalary = getInsuredSalary(grossSalary);
       laborFee = Math.round(insuredSalary * 0.115 * 0.2);
       healthFee = Math.round(insuredSalary * 0.0517 * 0.3);
@@ -1256,6 +1341,8 @@ function calculateHourlySalary(employeeId, yearMonth) {
     const result = {
       employeeId: employeeId,
       employeeName: config['員工姓名'],
+      employeeType: config['員工類型'],  // ⭐⭐⭐ 加入員工類型
+      department: department, 
       yearMonth: yearMonth,
       salaryType: '時薪',
       hourlyRate: hourlyRate,
@@ -1291,6 +1378,7 @@ function calculateHourlySalary(employeeId, yearMonth) {
     };
     
     Logger.log('✅ 時薪計算完成');
+    Logger.log(`   employeeType: ${result.employeeType}`);
     
     return { success: true, data: result };
     
@@ -1587,16 +1675,12 @@ function calculateLunchBreak(startTime, endTime) {
   return 0;
 }
 
-/**
- * ✅ 投保薪資級距對照表（供時薪使用）
- */
 function getInsuredSalary(salary) {
   const brackets = [
-    { min: 0, max: 26400, insured: 26400 },
-    { min: 26401, max: 27600, insured: 27600 },
-    { min: 27601, max: 28800, insured: 28800 },
-    { min: 28801, max: 30300, insured: 30300 },
-    { min: 30301, max: 31800, insured: 31800 },
+    { min: 0, max: 27600, insured: 27600 },      // ⭐ 第1級：26400 → 27600
+    { min: 27601, max: 28800, insured: 28800 },  // 第2級
+    { min: 28801, max: 30300, insured: 30300 },  // 第3級（基本工資29500適用）
+    { min: 30301, max: 31800, insured: 31800 },  // 第4級
     { min: 31801, max: 33300, insured: 33300 },
     { min: 33301, max: 34800, insured: 34800 },
     { min: 34801, max: 36300, insured: 36300 },
@@ -1605,7 +1689,33 @@ function getInsuredSalary(salary) {
     { min: 40101, max: 42000, insured: 42000 },
     { min: 42001, max: 43900, insured: 43900 },
     { min: 43901, max: 45800, insured: 45800 },
-    { min: 45801, max: Infinity, insured: 45800 }
+    { min: 45801, max: 48200, insured: 48200 },  // ⭐ 新增
+    { min: 48201, max: 50600, insured: 50600 },  // ⭐ 新增
+    { min: 50601, max: 53000, insured: 53000 },  // ⭐ 新增
+    { min: 53001, max: 55400, insured: 55400 },
+    { min: 55401, max: 57800, insured: 57800 },
+    { min: 57801, max: 60800, insured: 60800 },
+    { min: 60801, max: 63800, insured: 63800 },
+    { min: 63801, max: 66800, insured: 66800 },
+    { min: 66801, max: 69800, insured: 69800 },
+    { min: 69801, max: 72800, insured: 72800 },
+    { min: 72801, max: 76500, insured: 76500 },
+    { min: 76501, max: 80200, insured: 80200 },
+    { min: 80201, max: 83900, insured: 83900 },
+    { min: 83901, max: 87600, insured: 87600 },
+    { min: 87601, max: 92100, insured: 92100 },
+    { min: 92101, max: 96600, insured: 96600 },
+    { min: 96601, max: 101100, insured: 101100 },
+    { min: 101101, max: 105600, insured: 105600 },
+    { min: 105601, max: 110100, insured: 110100 },
+    { min: 110101, max: 115500, insured: 115500 },
+    { min: 115501, max: 120900, insured: 120900 },
+    { min: 120901, max: 126300, insured: 126300 },
+    { min: 126301, max: 131700, insured: 131700 },
+    { min: 131701, max: 137100, insured: 137100 },
+    { min: 137101, max: 142500, insured: 142500 },
+    { min: 142501, max: 147900, insured: 147900 },
+    { min: 147901, max: Infinity, insured: 150000 }  // 第39級
   ];
   
   for (const bracket of brackets) {
@@ -1614,7 +1724,7 @@ function getInsuredSalary(salary) {
     }
   }
   
-  return 26400;
+  return 27600; // ⭐ 預設值：26400 → 27600
 }
 
 /**
@@ -1665,6 +1775,7 @@ function calculateMonthlySalaryInternal(employeeId, yearMonth) {
     }
     
     const config = salaryConfig.data;
+    const department = config['部門'] || '員工';
     
     // 2. 取得加班記錄
     const overtimeRecords = getEmployeeMonthlyOvertime(employeeId, yearMonth);
@@ -1851,6 +1962,7 @@ function calculateMonthlySalaryInternal(employeeId, yearMonth) {
     const result = {
       employeeId: employeeId,
       employeeName: config['員工姓名'],
+      department: department, 
       yearMonth: yearMonth,
       salaryType: '月薪',
       hourlyRate: 0,       // ⭐ 月薪員工時薪為 0
@@ -2442,4 +2554,757 @@ function testSalaryTypePreservation() {
   }
   
   Logger.log('\n✅ 測試完成，請檢查「月薪資記錄」工作表');
+}
+
+
+/**
+ * ✅ 從「工作日誌」取得該月份的總工作時數
+ * 
+ * @param {string} employeeId - 員工ID
+ * @param {string} yearMonth - 年月 (YYYY-MM)
+ * @returns {number} 總工時（小時）
+ */
+function getWorkHoursFromWorklog(employeeId, yearMonth) {
+  try {
+    Logger.log('📋 從工作日誌取得工作時數');
+    Logger.log(`   員工ID: ${employeeId}`);
+    Logger.log(`   年月: ${yearMonth}`);
+    
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('工作日誌');
+    
+    if (!sheet) {
+      Logger.log('⚠️ 找不到「工作日誌」工作表');
+      return 0;
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    
+    if (data.length < 2) {
+      Logger.log('⚠️ 工作日誌無資料');
+      return 0;
+    }
+    
+    let totalHours = 0;
+    
+    // 從第 2 列開始遍歷（跳過標題）
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      
+      // 欄位對應（根據截圖2）：
+      // B (索引1): 員工ID
+      // E (索引4): 工作日期
+      // F (索引5): 工作時數 ⭐ 關鍵欄位
+      // H (索引7): 狀態
+      
+      const worklogEmployeeId = String(row[1] || '').trim();
+      const workDate = row[4];
+      const workHours = parseFloat(row[5]) || 0;
+      const status = String(row[7] || '').trim();
+      
+      // 檢查員工ID
+      if (worklogEmployeeId !== employeeId) continue;
+      
+      // 檢查狀態（只計算已核准的）
+      if (status !== 'APPROVED') continue;
+      
+      // 檢查年月
+      let recordYearMonth = '';
+      
+      if (workDate instanceof Date) {
+        recordYearMonth = Utilities.formatDate(workDate, 'Asia/Taipei', 'yyyy-MM');
+      } else if (typeof workDate === 'string') {
+        recordYearMonth = String(workDate).substring(0, 7);
+      } else {
+        continue;
+      }
+      
+      if (recordYearMonth !== yearMonth) continue;
+      
+      // ✅ 累計工時
+      totalHours += workHours;
+      
+      Logger.log(`   ✅ ${workDate}: ${workHours}h (狀態: ${status})`);
+    }
+    
+    Logger.log(`\n✅ 總工作時數: ${totalHours}h`);
+    
+    return totalHours;
+    
+  } catch (error) {
+    Logger.log('❌ 取得工作日誌工時失敗: ' + error.message);
+    return 0;
+  }
+}
+
+/**
+ * 🧪 測試工時來源修正
+ */
+function testWorklogWorkHours() {
+  Logger.log('🧪 測試工作日誌工時計算');
+  Logger.log('');
+  
+  const testCases = [
+    { id: 'U1771fd65da16e2f2000a3c3805fbe256', type: '組員', yearMonth: '2026-01' }
+  ];
+  
+  testCases.forEach(test => {
+    Logger.log('═══════════════════════════════════════');
+    Logger.log(`測試：${test.type} (${test.id})`);
+    Logger.log('═══════════════════════════════════════');
+    
+    const workHours = getWorkHoursFromWorklog(test.id, test.yearMonth);
+    
+    Logger.log('');
+    Logger.log(`✅ 結果：${workHours}h`);
+    Logger.log('');
+  });
+}
+
+function fixEricEmployeeType() {
+     const employeeId = 'U1771fd65da16e2f2000a3c3805fbe256';
+     const yearMonth = '2026-01';
+     
+     // 重新計算薪資
+     const result = calculateMonthlySalary(employeeId, yearMonth);
+     
+     if (result.success) {
+       // 儲存
+       saveMonthlySalary(result.data);
+       Logger.log('✅ 已修正員工類型');
+     }
+}
+
+function fixEricEmployeeType() {
+  Logger.log('🔧 開始修正 Eric 的員工類型');
+  
+  // 1. 先檢查員工設定
+  const employeeId = 'U1771fd65da16e2f2000a3c3805fbe256';
+  const config = getEmployeeSalaryTW(employeeId);
+  
+  Logger.log('📋 當前員工設定:');
+  Logger.log('   員工類型: ' + config.data['員工類型']);
+  
+  // 2. 如果是「正職」，需要手動改為「組員」
+  if (config.data['員工類型'] !== '組員') {
+    Logger.log('⚠️ 員工類型不是「組員」，請手動修改「員工薪資設定」工作表的 D 欄');
+    Logger.log('   應該改為：組員');
+    return;
+  }
+  
+  // 3. 重新計算 2026-01 的薪資
+  const yearMonth = '2026-01';
+  Logger.log(`\n🔄 重新計算 ${yearMonth} 薪資`);
+  
+  const result = calculateMonthlySalary(employeeId, yearMonth);
+  
+  if (result.success) {
+    Logger.log('✅ 計算成功:');
+    Logger.log('   員工類型: ' + result.data.employeeType);
+    Logger.log('   薪資類型: ' + result.data.salaryType);
+    Logger.log('   工作時數: ' + result.data.totalWorkHours);
+    
+    // 4. 儲存
+    saveMonthlySalary(result.data);
+    Logger.log('✅ 已重新儲存薪資記錄');
+  } else {
+    Logger.log('❌ 計算失敗: ' + result.message);
+  }
+}
+
+function testMyWorkHours() {
+  const employeeId = 'U1771fd65da16e2f2000a3c3805fbe256'; // 你的 ID
+  const yearMonth = '2026-01';
+  
+  const workHours = getWorkHoursFromWorklog(employeeId, yearMonth);
+  
+  Logger.log(`✅ ${yearMonth} 總工時: ${workHours}h`);
+}
+
+
+/**
+ * ✅ 主函數：一鍵生成兩個薪資管理表格
+ * 
+ * 執行方式：
+ * 1. 打開 Google Sheets
+ * 2. 工具 > 指令碼編輯器
+ * 3. 貼上這段程式碼
+ * 4. 執行 createAllSalarySheets() 函數
+ */
+function createAllSalarySheets() {
+  Logger.log('🚀 開始建立薪資管理表格...');
+  Logger.log('');
+  
+  // 1. 建立「員工薪資設定」表
+  createEmployeeSalaryConfigSheet();
+  
+  // 2. 建立「月薪資記錄」表
+  createMonthlySalarySheet();
+  
+  Logger.log('');
+  Logger.log('✅ 所有表格建立完成！');
+  Logger.log('');
+  Logger.log('📋 已建立的表格：');
+  Logger.log('   1. 員工薪資設定');
+  Logger.log('   2. 月薪資記錄');
+  Logger.log('');
+  Logger.log('💡 提示：');
+  Logger.log('   - 請先在「員工薪資設定」中設定員工資料');
+  Logger.log('   - 系統會自動計算並填入「月薪資記錄」');
+}
+
+/**
+ * ✅ 建立「員工薪資設定」表格
+ */
+function createEmployeeSalaryConfigSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetName = "員工薪資設定";
+  
+  // 檢查表格是否已存在
+  let sheet = ss.getSheetByName(sheetName);
+  
+  if (sheet) {
+    Logger.log(`⚠️ 「${sheetName}」已存在，將刪除並重建...`);
+    ss.deleteSheet(sheet);
+  }
+  
+  // 建立新表格
+  sheet = ss.insertSheet(sheetName);
+  
+  // 定義標題列（30欄）
+  const headers = [
+    // A-G: 基本資訊 (7欄)
+    "員工ID",           // A
+    "員工姓名",         // B
+    "身分證字號",       // C
+    "員工類型",         // D (正職/兼職)
+    "部門",             // E (組長/組員/其他)
+    "薪資類型",         // F (月薪/時薪)
+    "基本薪資",         // G
+    
+    // H-M: 固定津貼項目 (6欄)
+    "職務加給",         // H
+    "伙食費",           // I
+    "交通補助",         // J
+    "全勤獎金",         // K
+    "業績獎金",         // L
+    "其他津貼",         // M
+    
+    // N-Q: 銀行資訊 (4欄)
+    "銀行代碼",         // N (例如：700=郵局)
+    "銀行帳號",         // O
+    "到職日期",         // P
+    "發薪日",           // Q (預設5號)
+    
+    // R-W: 法定扣款 (6欄)
+    "勞退自提率(%)",    // R (0-6%)
+    "勞保費",           // S
+    "健保費",           // T
+    "就業保險費",       // U
+    "勞退自提",         // V
+    "所得稅",           // W
+    
+    // X-AA: 其他扣款 (4欄)
+    "福利金扣款",       // X
+    "宿舍費用",         // Y
+    "團保費用",         // Z
+    "其他扣款",         // AA
+    
+    // AB-AD: 系統欄位 (3欄)
+    "狀態",             // AB (在職/離職)
+    "備註",             // AC
+    "最後更新時間"      // AD
+  ];
+  
+  // 設定標題列
+  const headerRange = sheet.getRange(1, 1, 1, headers.length);
+  headerRange.setValues([headers]);
+  
+  // 標題列格式化
+  headerRange.setFontWeight("bold");
+  headerRange.setBackground("#10b981");  // 綠色背景
+  headerRange.setFontColor("#ffffff");   // 白色文字
+  headerRange.setHorizontalAlignment("center");
+  headerRange.setVerticalAlignment("middle");
+  
+  // 設定欄寬
+  sheet.setColumnWidth(1, 200);  // A: 員工ID
+  sheet.setColumnWidth(2, 100);  // B: 員工姓名
+  sheet.setColumnWidth(3, 120);  // C: 身分證字號
+  sheet.setColumnWidth(4, 80);   // D: 員工類型
+  sheet.setColumnWidth(5, 80);   // E: 部門
+  sheet.setColumnWidth(6, 80);   // F: 薪資類型
+  sheet.setColumnWidth(7, 100);  // G: 基本薪資
+  
+  // H-M: 津貼項目
+  for (let i = 8; i <= 13; i++) {
+    sheet.setColumnWidth(i, 90);
+  }
+  
+  // N-Q: 銀行資訊
+  sheet.setColumnWidth(14, 90);  // N: 銀行代碼
+  sheet.setColumnWidth(15, 150); // O: 銀行帳號
+  sheet.setColumnWidth(16, 100); // P: 到職日期
+  sheet.setColumnWidth(17, 70);  // Q: 發薪日
+  
+  // R-W: 法定扣款
+  for (let i = 18; i <= 23; i++) {
+    sheet.setColumnWidth(i, 100);
+  }
+  
+  // X-AA: 其他扣款
+  for (let i = 24; i <= 27; i++) {
+    sheet.setColumnWidth(i, 90);
+  }
+  
+  // AB-AD: 系統欄位
+  sheet.setColumnWidth(28, 70);  // AB: 狀態
+  sheet.setColumnWidth(29, 150); // AC: 備註
+  sheet.setColumnWidth(30, 150); // AD: 最後更新時間
+  
+  // 凍結標題列
+  sheet.setFrozenRows(1);
+  
+  // 新增範例資料（第2列）
+  const exampleData = [
+    // 基本資訊
+    "U123456789",           // 員工ID
+    "張三",                 // 員工姓名
+    "A123456789",           // 身分證字號
+    "正職",                 // 員工類型
+    "組員",                 // 部門
+    "月薪",                 // 薪資類型
+    35000,                  // 基本薪資
+    
+    // 固定津貼
+    3000,                   // 職務加給
+    2400,                   // 伙食費
+    1000,                   // 交通補助
+    1000,                   // 全勤獎金
+    0,                      // 業績獎金
+    0,                      // 其他津貼
+    
+    // 銀行資訊
+    "700",                  // 銀行代碼
+    "1234567890123",        // 銀行帳號
+    "2024-01-01",           // 到職日期
+    "5",                    // 發薪日
+    
+    // 法定扣款
+    0,                      // 勞退自提率(%)
+    1200,                   // 勞保費
+    600,                    // 健保費
+    150,                    // 就業保險費
+    0,                      // 勞退自提
+    0,                      // 所得稅
+    
+    // 其他扣款
+    0,                      // 福利金扣款
+    0,                      // 宿舍費用
+    0,                      // 團保費用
+    0,                      // 其他扣款
+    
+    // 系統欄位
+    "在職",                 // 狀態
+    "範例資料",             // 備註
+    new Date()              // 最後更新時間
+  ];
+  
+  sheet.getRange(2, 1, 1, exampleData.length).setValues([exampleData]);
+  
+  // 設定範例資料格式（淺灰色背景）
+  sheet.getRange(2, 1, 1, headers.length).setBackground("#f3f4f6");
+  
+  // 新增資料驗證
+  addEmployeeSalaryConfigValidation(sheet);
+  
+  Logger.log(`✅ 「${sheetName}」建立完成 (${headers.length}欄)`);
+}
+
+/**
+ * ✅ 建立「月薪資記錄」表格
+ */
+function createMonthlySalarySheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetName = "月薪資記錄";
+  
+  // 檢查表格是否已存在
+  let sheet = ss.getSheetByName(sheetName);
+  
+  if (sheet) {
+    Logger.log(`⚠️ 「${sheetName}」已存在，將刪除並重建...`);
+    ss.deleteSheet(sheet);
+  }
+  
+  // 建立新表格
+  sheet = ss.insertSheet(sheetName);
+  
+  // 定義標題列（37欄）
+  const headers = [
+    // A-J: 基本資訊 (10欄)
+    "薪資單ID",         // A (格式: SAL-2025-12-U123)
+    "員工ID",           // B
+    "員工姓名",         // C
+    "年月",             // D (格式: 2025-12)
+    "薪資類型",         // E (月薪/時薪)
+    "員工類型",         // F (正職/兼職)
+    "部門",             // G (組長/組員/其他)
+    "時薪",             // H (時薪員工才有)
+    "工作時數",         // I (時薪員工才有)
+    "總加班時數",       // J
+    
+    // K-Q: 應發項目 (7欄)
+    "基本薪資",         // K
+    "職務加給",         // L
+    "伙食費",           // M
+    "交通補助",         // N
+    "全勤獎金",         // O
+    "業績獎金",         // P
+    "其他津貼",         // Q
+    
+    // R-T: 加班費 (3欄)
+    "平日加班費",       // R (×1.34 或 ×1.67)
+    "休息日加班費",     // S (週六，×1.34~2.67)
+    "國定假日加班費",   // T (週日，×2.0)
+    
+    // U-Y: 法定扣款 (5欄)
+    "勞保費",           // U
+    "健保費",           // V
+    "就業保險費",       // W
+    "勞退自提",         // X
+    "所得稅",           // Y
+    
+    // Z-AD: 其他扣款 (5欄)
+    "請假扣款",         // Z
+    "福利金扣款",       // AA
+    "宿舍費用",         // AB
+    "團保費用",         // AC
+    "其他扣款",         // AD
+    
+    // AE-AF: 總計 (2欄)
+    "應發總額",         // AE
+    "實發金額",         // AF
+    
+    // AG-AH: 銀行資訊 (2欄)
+    "銀行代碼",         // AG
+    "銀行帳號",         // AH
+    
+    // AI-AK: 系統欄位 (3欄)
+    "狀態",             // AI (已計算/已發放)
+    "備註",             // AJ
+    "建立時間"          // AK
+  ];
+  
+  // 設定標題列
+  const headerRange = sheet.getRange(1, 1, 1, headers.length);
+  headerRange.setValues([headers]);
+  
+  // 標題列格式化
+  headerRange.setFontWeight("bold");
+  headerRange.setBackground("#10b981");  // 綠色背景
+  headerRange.setFontColor("#ffffff");   // 白色文字
+  headerRange.setHorizontalAlignment("center");
+  headerRange.setVerticalAlignment("middle");
+  
+  // 設定欄寬
+  sheet.setColumnWidth(1, 180);  // A: 薪資單ID
+  sheet.setColumnWidth(2, 200);  // B: 員工ID
+  sheet.setColumnWidth(3, 100);  // C: 員工姓名
+  sheet.setColumnWidth(4, 80);   // D: 年月
+  sheet.setColumnWidth(5, 80);   // E: 薪資類型
+  sheet.setColumnWidth(6, 80);   // F: 員工類型
+  sheet.setColumnWidth(7, 80);   // G: 部門
+  sheet.setColumnWidth(8, 70);   // H: 時薪
+  sheet.setColumnWidth(9, 90);   // I: 工作時數
+  sheet.setColumnWidth(10, 100); // J: 總加班時數
+  
+  // K-T: 應發項目 + 加班費
+  for (let i = 11; i <= 20; i++) {
+    sheet.setColumnWidth(i, 100);
+  }
+  
+  // U-AD: 扣款項目
+  for (let i = 21; i <= 30; i++) {
+    sheet.setColumnWidth(i, 90);
+  }
+  
+  // AE-AF: 總計
+  sheet.setColumnWidth(31, 110);  // AE: 應發總額
+  sheet.setColumnWidth(32, 110);  // AF: 實發金額
+  
+  // AG-AH: 銀行資訊
+  sheet.setColumnWidth(33, 90);   // AG: 銀行代碼
+  sheet.setColumnWidth(34, 150);  // AH: 銀行帳號
+  
+  // AI-AK: 系統欄位
+  sheet.setColumnWidth(35, 80);   // AI: 狀態
+  sheet.setColumnWidth(36, 150);  // AJ: 備註
+  sheet.setColumnWidth(37, 150);  // AK: 建立時間
+  
+  // 凍結標題列
+  sheet.setFrozenRows(1);
+  
+  // 新增範例資料（月薪員工）
+  const monthlyExample = [
+    "SAL-2025-12-U123456789",  // 薪資單ID
+    "U123456789",              // 員工ID
+    "張三",                    // 員工姓名
+    "2025-12",                 // 年月
+    "月薪",                    // 薪資類型
+    "正職",                    // 員工類型
+    "組員",                    // 部門
+    0,                         // 時薪
+    0,                         // 工作時數
+    8,                         // 總加班時數
+    
+    // 應發項目
+    35000,                     // 基本薪資
+    3000,                      // 職務加給
+    2400,                      // 伙食費
+    1000,                      // 交通補助
+    1000,                      // 全勤獎金
+    0,                         // 業績獎金
+    0,                         // 其他津貼
+    
+    // 加班費
+    3920,                      // 平日加班費 (8h)
+    0,                         // 休息日加班費
+    0,                         // 國定假日加班費
+    
+    // 法定扣款
+    1200,                      // 勞保費
+    600,                       // 健保費
+    150,                       // 就業保險費
+    0,                         // 勞退自提
+    0,                         // 所得稅
+    
+    // 其他扣款
+    0,                         // 請假扣款
+    0,                         // 福利金扣款
+    0,                         // 宿舍費用
+    0,                         // 團保費用
+    0,                         // 其他扣款
+    
+    // 總計
+    46320,                     // 應發總額
+    44370,                     // 實發金額
+    
+    // 銀行資訊
+    "700",                     // 銀行代碼
+    "1234567890123",           // 銀行帳號
+    
+    // 系統欄位
+    "已計算",                  // 狀態
+    "範例：月薪員工",          // 備註
+    new Date()                 // 建立時間
+  ];
+  
+  sheet.getRange(2, 1, 1, monthlyExample.length).setValues([monthlyExample]);
+  
+  // 新增範例資料（時薪員工）
+  const hourlyExample = [
+    "SAL-2025-12-U987654321",  // 薪資單ID
+    "U987654321",              // 員工ID
+    "李四",                    // 員工姓名
+    "2025-12",                 // 年月
+    "時薪",                    // 薪資類型
+    "兼職",                    // 員工類型
+    "員工",                    // 部門
+    190,                       // 時薪
+    120,                       // 工作時數 (15天 × 8h)
+    4,                         // 總加班時數
+    
+    // 應發項目
+    22800,                     // 基本薪資 (190 × 120)
+    0,                         // 職務加給
+    0,                         // 伙食費
+    0,                         // 交通補助
+    0,                         // 全勤獎金
+    0,                         // 業績獎金
+    0,                         // 其他津貼
+    
+    // 加班費
+    1018,                      // 平日加班費 (4h)
+    0,                         // 休息日加班費
+    0,                         // 國定假日加班費
+    
+    // 法定扣款
+    0,                         // 勞保費 (未達基本工資)
+    0,                         // 健保費
+    0,                         // 就業保險費
+    0,                         // 勞退自提
+    0,                         // 所得稅
+    
+    // 其他扣款
+    0,                         // 請假扣款
+    0,                         // 福利金扣款
+    0,                         // 宿舍費用
+    0,                         // 團保費用
+    0,                         // 其他扣款
+    
+    // 總計
+    23818,                     // 應發總額
+    23818,                     // 實發金額
+    
+    // 銀行資訊
+    "822",                     // 銀行代碼 (中信)
+    "9876543210123",           // 銀行帳號
+    
+    // 系統欄位
+    "已計算",                  // 狀態
+    "範例：時薪員工",          // 備註
+    new Date()                 // 建立時間
+  ];
+  
+  sheet.getRange(3, 1, 1, hourlyExample.length).setValues([hourlyExample]);
+  
+  // 設定範例資料格式
+  sheet.getRange(2, 1, 2, headers.length).setBackground("#f3f4f6");
+  
+  // 新增條件格式（狀態欄位）
+  addMonthlySalaryConditionalFormatting(sheet);
+  
+  Logger.log(`✅ 「${sheetName}」建立完成 (${headers.length}欄)`);
+}
+
+
+/**
+ * ✅ 新增「員工薪資設定」的資料驗證
+ */
+function addEmployeeSalaryConfigValidation(sheet) {
+  // D欄: 員工類型
+  const employeeTypeRule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['正職', '兼職'], true)
+    .setAllowInvalid(false)
+    .setHelpText('請選擇員工類型')
+    .build();
+  sheet.getRange(2, 4, 1000, 1).setDataValidation(employeeTypeRule);
+  
+  // E欄: 部門
+  const departmentRule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['組長', '組員', '員工', '管理員', '行政' , '繪圖', '會計'], true)
+    .setAllowInvalid(false)
+    .setHelpText('請選擇部門')
+    .build();
+  sheet.getRange(2, 5, 1000, 1).setDataValidation(departmentRule);
+  
+  // F欄: 薪資類型
+  const salaryTypeRule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['月薪', '時薪'], true)
+    .setAllowInvalid(false)
+    .setHelpText('請選擇薪資類型')
+    .build();
+  sheet.getRange(2, 6, 1000, 1).setDataValidation(salaryTypeRule);
+  
+  // AB欄: 狀態
+  const statusRule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['在職', '離職', '留停'], true)
+    .setAllowInvalid(false)
+    .setHelpText('請選擇狀態')
+    .build();
+  sheet.getRange(2, 28, 1000, 1).setDataValidation(statusRule);
+  
+  Logger.log('   ✅ 已新增資料驗證規則');
+}
+
+/**
+ * ✅ 新增「月薪資記錄」的條件格式
+ */
+function addMonthlySalaryConditionalFormatting(sheet) {
+  // AI欄 (狀態) 條件格式
+  const statusRange = sheet.getRange(2, 35, 1000, 1); // AI欄
+  
+  // 已發放 = 綠色
+  const paidRule = SpreadsheetApp.newConditionalFormatRule()
+    .whenTextEqualTo('已發放')
+    .setBackground('#d1fae5')
+    .setFontColor('#065f46')
+    .setRanges([statusRange])
+    .build();
+  
+  // 已計算 = 黃色
+  const calculatedRule = SpreadsheetApp.newConditionalFormatRule()
+    .whenTextEqualTo('已計算')
+    .setBackground('#fef3c7')
+    .setFontColor('#92400e')
+    .setRanges([statusRange])
+    .build();
+  
+  // 待確認 = 橘色
+  const pendingRule = SpreadsheetApp.newConditionalFormatRule()
+    .whenTextEqualTo('待確認')
+    .setBackground('#fed7aa')
+    .setFontColor('#9a3412')
+    .setRanges([statusRange])
+    .build();
+  
+  sheet.setConditionalFormatRules([paidRule, calculatedRule, pendingRule]);
+  
+  Logger.log('   ✅ 已新增條件格式規則');
+}
+
+/**
+ * ✅ 測試函數：檢查表格結構
+ */
+function testSheetStructure() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  Logger.log('🔍 檢查表格結構...');
+  Logger.log('');
+  
+  // 檢查「員工薪資設定」
+  const configSheet = ss.getSheetByName('員工薪資設定');
+  if (configSheet) {
+    const headers1 = configSheet.getRange(1, 1, 1, configSheet.getLastColumn()).getValues()[0];
+    Logger.log('✅ 員工薪資設定:');
+    Logger.log(`   欄位數: ${headers1.length}`);
+    Logger.log(`   欄位: ${headers1.join(', ')}`);
+  } else {
+    Logger.log('❌ 找不到「員工薪資設定」表格');
+  }
+  
+  Logger.log('');
+  
+  // 檢查「月薪資記錄」
+  const salarySheet = ss.getSheetByName('月薪資記錄');
+  if (salarySheet) {
+    const headers2 = salarySheet.getRange(1, 1, 1, salarySheet.getLastColumn()).getValues()[0];
+    Logger.log('✅ 月薪資記錄:');
+    Logger.log(`   欄位數: ${headers2.length}`);
+    Logger.log(`   欄位: ${headers2.join(', ')}`);
+  } else {
+    Logger.log('❌ 找不到「月薪資記錄」表格');
+  }
+}
+
+/**
+ * ✅ 清理函數：刪除範例資料
+ */
+function clearExampleData() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  const ui = SpreadsheetApp.getUi();
+  const response = ui.alert(
+    '確認刪除',
+    '是否要刪除所有範例資料？',
+    ui.ButtonSet.YES_NO
+  );
+  
+  if (response === ui.Button.YES) {
+    // 刪除「員工薪資設定」範例
+    const configSheet = ss.getSheetByName('員工薪資設定');
+    if (configSheet && configSheet.getLastRow() > 1) {
+      configSheet.deleteRows(2, configSheet.getLastRow() - 1);
+      Logger.log('✅ 已刪除「員工薪資設定」範例資料');
+    }
+    
+    // 刪除「月薪資記錄」範例
+    const salarySheet = ss.getSheetByName('月薪資記錄');
+    if (salarySheet && salarySheet.getLastRow() > 1) {
+      salarySheet.deleteRows(2, salarySheet.getLastRow() - 1);
+      Logger.log('✅ 已刪除「月薪資記錄」範例資料');
+    }
+    
+    ui.alert('完成', '範例資料已刪除', ui.ButtonSet.OK);
+  }
 }

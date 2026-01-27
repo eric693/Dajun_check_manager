@@ -11,37 +11,54 @@ function handleSubmitWorklog(params) {
     Logger.log('📝 handleSubmitWorklog 開始');
     Logger.log('═══════════════════════════════════════');
     
-    // 驗證 Session
     if (!params.token) {
-      Logger.log('❌ 缺少 token');
       return { ok: false, msg: "缺少認證 token" };
     }
     
     const session = checkSession_(params.token);
     
     if (!session.ok || !session.user) {
-      Logger.log('❌ Session 無效');
       return { ok: false, msg: "未授權或 session 已過期" };
     }
-    
+  
     Logger.log('✅ Session 驗證成功');
     Logger.log('   使用者: ' + session.user.name);
     
-    // 取得參數
-    const userId = session.user.userId;
-    const userName = session.user.name;
-    const department = session.user.dept || '未分配部門';
+    // ⭐ 支援代填：如果有 targetUserId，就使用 target 資料，否則使用當前使用者
+    const userId = params.targetUserId || session.user.userId;
+    const userName = params.targetUserName || session.user.name;
+    const department = params.targetUserDept || session.user.dept || '未分配部門';
+    
     const date = params.date;
+    const weather = params.weather;              // ⭐ 新增
+    const location = params.location;            // ⭐ 新增
+    const timeSlot = params.timeSlot || params.serialNumber || '';
     const hours = params.hours;
     const content = params.content;
+    const note = params.note || '';              // ⭐ 新增
     
     Logger.log('📥 收到的參數:');
     Logger.log('   日期: ' + date);
+    Logger.log('   天氣: ' + weather);
+    Logger.log('   地點: ' + location);
+    Logger.log('   工作時段: ' + timeSlot);
     Logger.log('   時數: ' + hours);
     Logger.log('   內容長度: ' + (content ? content.length : 0));
+    Logger.log('   備註長度: ' + (note ? note.length : 0));
     
-    // 呼叫核心函數
-    const result = submitWorklog(userId, userName, department, date, hours, content);
+    // ⭐ 呼叫核心函數（傳遞新參數）
+    const result = submitWorklog(
+      userId, 
+      userName, 
+      department, 
+      date, 
+      hours, 
+      content,
+      weather,      // ⭐
+      location,     // ⭐
+      timeSlot, // ⭐
+      note          // ⭐
+    );
     
     Logger.log('📤 處理結果: ' + result.success);
     Logger.log('═══════════════════════════════════════');
@@ -63,7 +80,6 @@ function handleSubmitWorklog(params) {
  */
 function handleGetWorklogs(params) {
   try {
-    // 驗證 Session
     if (!params.token) {
       return { ok: false, msg: "缺少認證 token" };
     }
@@ -99,7 +115,6 @@ function handleGetWorklogs(params) {
  */
 function handleGetWorklogDetail(params) {
   try {
-    // 驗證 Session
     if (!params.token) {
       return { ok: false, msg: "缺少認證 token" };
     }
@@ -116,7 +131,6 @@ function handleGetWorklogDetail(params) {
     
     const result = getWorklogDetail(params.id);
     
-    // 檢查權限（只能查看自己的工作日誌）
     if (result.success && result.worklog.userId !== session.user.userId && session.user.dept !== '管理員') {
       return { ok: false, msg: "沒有權限查看此工作日誌" };
     }
@@ -142,7 +156,6 @@ function handleGetPendingWorklogs(params) {
   try {
     Logger.log('📋 handleGetPendingWorklogs 開始');
     
-    // 驗證 Session
     if (!params.token) {
       return { ok: false, msg: "缺少認證 token" };
     }
@@ -153,7 +166,6 @@ function handleGetPendingWorklogs(params) {
       return { ok: false, msg: "未授權或 session 已過期" };
     }
     
-    // 驗證管理員權限
     if (session.user.dept !== '管理員') {
       Logger.log('❌ 非管理員嘗試存取');
       return { ok: false, msg: "需要管理員權限" };
@@ -177,9 +189,8 @@ function handleGetPendingWorklogs(params) {
     return { ok: false, msg: error.message };
   }
 }
-
 /**
- * ✅ 處理審核工作日誌（修正版）
+ * ✅ 處理審核工作日誌
  */
 function handleReviewWorklog(params) {
   try {
@@ -187,7 +198,6 @@ function handleReviewWorklog(params) {
     Logger.log('📝 handleReviewWorklog 開始');
     Logger.log('═══════════════════════════════════════');
     
-    // 驗證 Session
     if (!params.token) {
       Logger.log('❌ 缺少 token');
       return { ok: false, msg: "缺少認證 token" };
@@ -200,7 +210,6 @@ function handleReviewWorklog(params) {
       return { ok: false, msg: "未授權或 session 已過期" };
     }
     
-    // 驗證管理員權限
     if (session.user.dept !== '管理員') {
       Logger.log('❌ 非管理員嘗試審核');
       return { ok: false, msg: "需要管理員權限" };
@@ -208,10 +217,9 @@ function handleReviewWorklog(params) {
     
     Logger.log('✅ 管理員權限驗證通過: ' + session.user.name);
     
-    // ⭐ 修改：改用新的參數名稱
-    const worklogId = params.worklogId || params.id;  // 支援兩種參數名
-    const action = params.reviewAction || params.action;  // 支援兩種參數名
-    const comment = params.reviewComment || params.comment || '';  // 支援兩種參數名
+    const worklogId = params.worklogId || params.id;
+    const action = params.reviewAction || params.action;
+    const comment = params.reviewComment || params.comment || '';
     
     Logger.log('📥 收到的參數:');
     Logger.log('   工作日誌ID: ' + worklogId);
@@ -225,11 +233,9 @@ function handleReviewWorklog(params) {
     
     if (!action || (action !== 'approve' && action !== 'reject')) {
       Logger.log('❌ 無效的審核動作: ' + action);
-      Logger.log('   params 內容: ' + JSON.stringify(params));
       return { ok: false, msg: "無效的審核動作: " + action };
     }
     
-    // 呼叫核心函數
     const result = reviewWorklog(
       worklogId,
       action,
@@ -251,6 +257,7 @@ function handleReviewWorklog(params) {
     return { ok: false, msg: error.message };
   }
 }
+
 /**
  * ✅ 處理取得工作日誌報表
  */
@@ -258,7 +265,6 @@ function handleGetWorklogReport(params) {
   try {
     Logger.log('📊 handleGetWorklogReport 開始');
     
-    // 驗證 Session
     if (!params.token) {
       return { ok: false, msg: "缺少認證 token" };
     }
@@ -269,7 +275,6 @@ function handleGetWorklogReport(params) {
       return { ok: false, msg: "未授權或 session 已過期" };
     }
     
-    // 驗證管理員權限
     if (session.user.dept !== '管理員') {
       return { ok: false, msg: "需要管理員權限" };
     }
@@ -298,7 +303,6 @@ function handleGetWorklogReport(params) {
     return { ok: false, msg: error.message };
   }
 }
-
 // ==================== 測試函數 ====================
 
 /**
@@ -357,7 +361,6 @@ function handleGetAllWorklogReport(params) {
   try {
     Logger.log('📊 handleGetAllWorklogReport 開始');
     
-    // 驗證 Session
     if (!params.token) {
       return { ok: false, msg: "缺少認證 token" };
     }
@@ -368,7 +371,6 @@ function handleGetAllWorklogReport(params) {
       return { ok: false, msg: "未授權或 session 已過期" };
     }
     
-    // 驗證管理員權限
     if (session.user.dept !== '管理員') {
       return { ok: false, msg: "需要管理員權限" };
     }
@@ -392,6 +394,51 @@ function handleGetAllWorklogReport(params) {
     
   } catch (error) {
     Logger.log('❌ handleGetAllWorklogReport 錯誤: ' + error);
+    return { ok: false, msg: error.message };
+  }
+}
+
+
+
+/**
+ * ✅ 新增：處理取得當月工作日誌統計
+ */
+function handleGetWorklogMonthlyStats(params) {
+  try {
+    Logger.log('📊 handleGetWorklogMonthlyStats 開始');
+    
+    if (!params.token) {
+      return { ok: false, msg: "缺少認證 token" };
+    }
+    
+    const session = checkSession_(params.token);
+    
+    if (!session.ok || !session.user) {
+      return { ok: false, msg: "未授權或 session 已過期" };
+    }
+    
+    if (session.user.dept !== '管理員') {
+      return { ok: false, msg: "需要管理員權限" };
+    }
+    
+    const yearMonth = params.yearMonth;
+    
+    if (!yearMonth) {
+      return { ok: false, msg: "缺少年月參數" };
+    }
+    
+    Logger.log('   年月: ' + yearMonth);
+    
+    const result = getWorklogMonthlyStats(yearMonth);
+    
+    return {
+      ok: result.success,
+      stats: result.stats,
+      msg: result.message || '查詢成功'
+    };
+    
+  } catch (error) {
+    Logger.log('❌ handleGetWorklogMonthlyStats 錯誤: ' + error);
     return { ok: false, msg: error.message };
   }
 }

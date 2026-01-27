@@ -11,9 +11,10 @@ const ADMIN_LIST = [
 ];
 
 // DbOperations.gs - 修正後的 writeEmployee_ 函數
-
 /**
- * ✅ 修正版：登入時不覆蓋手動設定的姓名
+ * ✅ 新增員工時，根據 ADMIN_LIST 判斷角色
+ * - 在 ADMIN_LIST 內 → 管理員
+ * - 不在 ADMIN_LIST 內 → 員工（預設）
  */
 function writeEmployee_(profile) {
   const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_EMPLOYEES);
@@ -24,20 +25,18 @@ function writeEmployee_(profile) {
   for (let i = 1; i < values.length; i++) {
     if (values[i][0] === employeeId) {
       
-      // ⭐⭐⭐ 關鍵修正：檢查是否有手動設定的姓名
-      const currentName = values[i][2];           // C 欄：displayName（目前顯示的姓名）
-      const nameOverride = values[i][8] || "";    // I 欄：nameOverride（手動設定的姓名）
+      // 檢查是否有手動設定的姓名
+      const currentName = values[i][2];
+      const nameOverride = values[i][8] || "";
       
-      // 只在沒有手動設定姓名時才更新
       if (!nameOverride) {
         Logger.log(`✅ 更新員工 ${profile.displayName} 的 LINE 姓名`);
-        sheet.getRange(i + 1, 3).setValue(profile.displayName);  // C 欄
+        sheet.getRange(i + 1, 3).setValue(profile.displayName);
       } else {
-        Logger.log(`🔒 保留員工 ${currentName} 的手動設定姓名（忽略 LINE 姓名：${profile.displayName}）`);
-        // 不更新姓名，保持原有的手動設定
+        Logger.log(`🔒 保留員工 ${currentName} 的手動設定姓名`);
       }
       
-      // 更新其他資訊（email, 頭像等）
+      // 更新其他資訊（保留原有角色）
       sheet.getRange(i + 1, 2).setValue(profile.email || "");
       sheet.getRange(i + 1, 4).setValue(profile.pictureUrl);
       sheet.getRange(i + 1, 8).setValue("啟用");
@@ -47,27 +46,25 @@ function writeEmployee_(profile) {
     }
   }
 
-  // 判斷是否為管理員
+  // ⭐ 新用戶：判斷角色（只分管理員/員工）
   const role = ADMIN_LIST.includes(employeeId) ? "管理員" : "員工";
 
-  // 新增資料
   const row = [
-    employeeId,              // A: userId
-    profile.email || "",     // B: email
-    profile.displayName,     // C: displayName
-    profile.pictureUrl,      // D: pictureUrl
-    new Date(),              // E: 建立時間
-    role,                    // F: 部門（權限）
-    "",                      // G: 到職日期
-    "啟用",                  // H: 狀態
-    ""                       // I: nameOverride（手動設定的姓名，新用戶為空）
+    employeeId,
+    profile.email || "",
+    profile.displayName,
+    profile.pictureUrl,
+    new Date(),
+    role,                // ⭐ 預設角色
+    "",
+    "啟用",
+    ""
   ];
 
   sheet.appendRow(row);
-  Logger.log(`✅ 新增員工 ${profile.displayName}（權限：${role}）`);
+  Logger.log(`✅ 新增員工 ${profile.displayName}（預設角色：${role}）`);
   return row;
 }
-// DbOperations.gs - 修正後的 findEmployeeByLineUserId_ 函數
 
 /**
  * ✅ 修正版：優先使用手動設定的姓名
@@ -662,27 +659,6 @@ function punchAdjusted(sessionToken, type, punchDate, lat, lng, note) {
     params: { type: type } 
   };
 }
-// function punchAdjusted(sessionToken, type, punchDate, lat, lng, note) {
-//   const employee = checkSession_(sessionToken);
-//   const user = employee.user;
-//   if (!user) return { ok: false, code: "ERR_SESSION_INVALID" };
-
-//   const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_ATTENDANCE);
-//   sh.appendRow([
-//     punchDate,
-//     user.userId,
-//     user.dept,
-//     user.name,
-//     type,
-//     `(${lat},${lng})`,
-//     "",
-//     "補打卡",
-//     "?",
-//     note
-//   ]);
-
-//   return { ok: true, code: `ADJUST_PUNCH_SUCCESS`, params: { type: type } };
-// }
 
 /**
  * 取得出勤紀錄
@@ -712,10 +688,6 @@ function getAttendanceRecords(monthParam, userIdParam) {
     device: r[9]
   }));
 }
-
-/**
- * 取得出勤詳細資料（用於報表匯出）
- */
 /**
  * ✅ 修正版：取得出勤詳細資料（修正 localeCompare 錯誤）
  * 
@@ -904,216 +876,6 @@ function getAttendanceDetails(monthParam, userIdParam) {
     };
   }
 }
-
-/**
- * 🧪 測試修正後的函數
- */
-function testFixedGetAttendanceDetails() {
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('🧪 測試修正後的 getAttendanceDetails');
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('');
-  
-  const monthParam = '2025-12';
-  const userIdParam = 'U68e0ca9d516e63ed15bf9387fad174ac';
-  
-  const result = getAttendanceDetails(monthParam, userIdParam);
-  
-  Logger.log('');
-  Logger.log('📤 測試結果:');
-  Logger.log(`   ok: ${result.ok}`);
-  Logger.log(`   總記錄數: ${result.records ? result.records.length : 0}`);
-  Logger.log('');
-  
-  if (result.ok && result.records) {
-    // 檢查 12/10
-    const dec10 = result.records.find(r => r.date === '2025-12-10');
-    
-    if (dec10) {
-      Logger.log('✅✅✅ 找到 2025-12-10 的記錄！');
-      Logger.log('');
-      Logger.log('📋 記錄內容:');
-      Logger.log(`   date: ${dec10.date}`);
-      Logger.log(`   name: ${dec10.name}`);
-      Logger.log(`   reason: ${dec10.reason}`);
-      Logger.log(`   打卡數: ${dec10.record.length}`);
-      Logger.log(`   有請假: ${dec10.leave ? '是' : '否'}`);
-      Logger.log(`   有加班: ${dec10.overtime ? '是' : '否'}`);
-      Logger.log('');
-      
-      if (dec10.leave) {
-        Logger.log('🏖️ 請假資訊:');
-        Logger.log(`   假別: ${dec10.leave.leaveType}`);
-        Logger.log(`   天數: ${dec10.leave.days}`);
-        Logger.log(`   狀態: ${dec10.leave.status}`);
-        Logger.log(`   原因: ${dec10.leave.reason}`);
-        Logger.log('');
-        Logger.log('✅ 修正成功！即使沒打卡也能顯示請假資訊');
-      }
-      
-      if (dec10.overtime) {
-        Logger.log('⏰ 加班資訊:');
-        Logger.log(`   時間: ${dec10.overtime.startTime} - ${dec10.overtime.endTime}`);
-        Logger.log(`   時數: ${dec10.overtime.hours}h`);
-      }
-    } else {
-      Logger.log('❌ 還是沒找到 2025-12-10 的記錄');
-      Logger.log('');
-      Logger.log('📅 現有的日期:');
-      result.records.forEach(r => {
-        Logger.log(`   - ${r.date}`);
-      });
-    }
-    
-    // 檢查 12/11
-    Logger.log('');
-    const dec11 = result.records.find(r => r.date === '2025-12-11');
-    
-    if (dec11) {
-      Logger.log('✅ 找到 2025-12-11 的記錄');
-      
-      if (dec11.leave) {
-        Logger.log(`   🏖️ 請假: ${dec11.leave.leaveType} (${dec11.leave.days}天)`);
-      }
-      
-      if (dec11.overtime) {
-        Logger.log(`   ⏰ 加班: ${dec11.overtime.hours}h`);
-      }
-    }
-  }
-  
-  Logger.log('');
-  Logger.log('═══════════════════════════════════════');
-}
-// function getAttendanceDetails(monthParam, userIdParam) {
-//   const records = getAttendanceRecords(monthParam, userIdParam);
-  
-//   // 👉 取得該月份已核准的加班記錄
-//   const overtimeRecords = getApprovedOvertimeRecords(monthParam, userIdParam);
-  
-//   // 👉 取得該月份已核准的請假記錄
-//   const leaveRecords = getApprovedLeaveRecords(monthParam, userIdParam);
-  
-//   const dailyRecords = {};
-  
-//   // 處理打卡記錄
-//   records.forEach(r => {
-//     const dateKey = formatDate(r.date);
-//     const userId = r.userId || 'unknown';
-//     const userName = r.name || '未知員工';
-//     const key = `${userId}_${dateKey}`;
-    
-//     if (!dailyRecords[key]) {
-//       dailyRecords[key] = {
-//         date: dateKey,
-//         userId: userId,
-//         name: userName,
-//         record: [],
-//         reason: "",
-//         overtime: null,  // 加班資訊
-//         leave: null      // 👈 新增：請假資訊
-//       };
-//     }
-    
-//     dailyRecords[key].record.push({
-//       time: formatTime(r.date),
-//       type: r.type,
-//       location: r.location,
-//       note: r.note || ""
-//     });
-//   });
-  
-//   // 👉 合併加班資料
-//   overtimeRecords.forEach(ot => {
-//     const key = `${ot.employeeId}_${ot.overtimeDate}`;
-    
-//     if (dailyRecords[key]) {
-//       dailyRecords[key].overtime = {
-//         startTime: ot.startTime,
-//         endTime: ot.endTime,
-//         hours: ot.hours,
-//         reason: ot.reason
-//       };
-//     } else {
-//       // 如果該日沒有打卡記錄，也建立一筆（只顯示加班）
-//       dailyRecords[key] = {
-//         date: ot.overtimeDate,
-//         userId: ot.employeeId,
-//         name: ot.employeeName,
-//         record: [],
-//         reason: "STATUS_NO_RECORD",
-//         overtime: {
-//           startTime: ot.startTime,
-//           endTime: ot.endTime,
-//           hours: ot.hours,
-//           reason: ot.reason
-//         },
-//         leave: null  // 👈 確保有 leave 欄位
-//       };
-//     }
-//   });
-  
-//   // 👉 合併請假資料
-//   leaveRecords.forEach(leave => {
-//     const key = `${leave.employeeId}_${leave.date}`;
-    
-//     if (dailyRecords[key]) {
-//       dailyRecords[key].leave = {
-//         status: leave.status,
-//         leaveType: leave.leaveType,
-//         days: leave.days,
-//         reason: leave.reason
-//       };
-//     } else {
-//       // 如果該日沒有打卡記錄，也建立一筆（只顯示請假）
-//       dailyRecords[key] = {
-//         date: leave.date,
-//         userId: leave.employeeId,
-//         name: leave.employeeName,
-//         record: [],
-//         reason: "STATUS_NO_RECORD",
-//         overtime: null,  // 👈 確保有 overtime 欄位
-//         leave: {
-//           status: leave.status,
-//           leaveType: leave.leaveType,
-//           days: leave.days,
-//           reason: leave.reason
-//         }
-//       };
-//     }
-//   });
-  
-//   // 判斷打卡狀態
-//   const result = Object.values(dailyRecords).map(day => {
-//     const hasIn = day.record.some(r => r.type === "上班");
-//     const hasOut = day.record.some(r => r.type === "下班");
-    
-//     let reason = "";
-//     if (!hasIn && !hasOut) {
-//       reason = "STATUS_NO_RECORD";
-//     } else if (!hasIn) {
-//       reason = "STATUS_PUNCH_IN_MISSING";
-//     } else if (!hasOut) {
-//       reason = "STATUS_PUNCH_OUT_MISSING";
-//     } else {
-//       reason = "STATUS_PUNCH_NORMAL";
-//     }
-    
-//     return {
-//       date: day.date,
-//       userId: day.userId,
-//       name: day.name,
-//       record: day.record,
-//       reason: reason,
-//       overtime: day.overtime,  // 包含加班資訊
-//       leave: day.leave         // 👈 包含請假資訊
-//     };
-//   });
-  
-//   Logger.log(`📊 getAttendanceDetails: 共 ${result.length} 筆記錄`);
-//   return { ok: true, records: result };
-// }
-
 /**
  * 👉 新增：取得已核准的加班記錄
  */
@@ -1315,98 +1077,6 @@ function getApprovedOvertimeRecords(monthParam, userIdParam) {
     return [];
   }
 }
-
-function testGetAttendanceDetailsWithOvertime() {
-  Logger.log('🧪 測試 getAttendanceDetails');
-  Logger.log('═══════════════════════════════════════');
-  
-  const monthParam = '2025-12';
-  const userIdParam = 'U68e0ca9d516e63ed15bf9387fad174ac';
-  
-  Logger.log(`📅 查詢條件: ${monthParam}, userId: ${userIdParam}`);
-  Logger.log('');
-  
-  const result = getAttendanceDetails(monthParam, userIdParam);
-  
-  Logger.log('📤 API 回應:');
-  Logger.log(`   ok: ${result.ok}`);
-  Logger.log(`   records 數量: ${result.records ? result.records.length : 0}`);
-  Logger.log('');
-  
-  if (result.ok && result.records) {
-    // 找出 2025-12-09 的記錄
-    const dec09 = result.records.find(r => r.date === '2025-12-09');
-    
-    if (dec09) {
-      Logger.log('✅ 找到 2025-12-09 的記錄:');
-      Logger.log('');
-      Logger.log('📋 記錄內容:');
-      Logger.log(JSON.stringify(dec09, null, 2));
-      Logger.log('');
-      
-      Logger.log('🔍 加班資訊檢查:');
-      Logger.log(`   overtime 存在: ${dec09.overtime ? '是' : '否'}`);
-      
-      if (dec09.overtime) {
-        Logger.log('   ✅ 加班資訊:');
-        Logger.log(`      開始時間: ${dec09.overtime.startTime}`);
-        Logger.log(`      結束時間: ${dec09.overtime.endTime}`);
-        Logger.log(`      時數: ${dec09.overtime.hours}`);
-        Logger.log(`      原因: ${dec09.overtime.reason}`);
-      } else {
-        Logger.log('   ❌ 沒有加班資訊');
-      }
-    } else {
-      Logger.log('❌ 沒有找到 2025-12-09 的記錄');
-      Logger.log('');
-      Logger.log('📋 所有記錄的日期:');
-      result.records.forEach((r, i) => {
-        Logger.log(`   ${i + 1}. ${r.date} - ${r.name}`);
-      });
-    }
-  }
-  
-  Logger.log('');
-  Logger.log('═══════════════════════════════════════');
-}
-/**
- * 🧪 測試加班記錄查詢
- */
-function testGetApprovedOvertimeRecords() {
-  Logger.log('🧪 測試加班記錄查詢');
-  Logger.log('═══════════════════════════════════════');
-  
-  const monthParam = '2025-12';
-  const userIdParam = 'U68e0ca9d516e63ed15bf9387fad174ac';  // 替換成您的實際 userId
-  
-  Logger.log(`📅 查詢條件: ${monthParam}, userId: ${userIdParam}`);
-  Logger.log('');
-  
-  const records = getApprovedOvertimeRecords(monthParam, userIdParam);
-  
-  Logger.log('');
-  Logger.log('📤 查詢結果:');
-  Logger.log(`   找到 ${records.length} 筆記錄`);
-  
-  if (records.length > 0) {
-    records.forEach((rec, i) => {
-      Logger.log('');
-      Logger.log(`   記錄 ${i + 1}:`);
-      Logger.log(`      日期: ${rec.overtimeDate}`);
-      Logger.log(`      員工: ${rec.employeeName} (${rec.employeeId})`);
-      Logger.log(`      時間: ${rec.startTime} - ${rec.endTime}`);
-      Logger.log(`      時數: ${rec.hours} 小時`);
-      Logger.log(`      原因: ${rec.reason}`);
-    });
-  } else {
-    Logger.log('   ⚠️ 沒有找到符合條件的記錄');
-  }
-  
-  Logger.log('');
-  Logger.log('═══════════════════════════════════════');
-}
-
-
 // ==================== 地點管理 ====================
 /**
  * 新增打卡地點
@@ -1430,15 +1100,6 @@ function addLocation(name, lat, lng, radius) {
   Logger.log(`✅ 新增地點：${name}，範圍：${finalRadius}公尺`);
   return { ok: true, code: "LOCATION_ADD_SUCCESS" };
 }
-// function addLocation(name, lat, lng) {
-//   if (!name || !lat || !lng) {
-//     return { ok: false, code: "ERR_INVALID_INPUT" };
-//   }
-  
-//   const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_LOCATIONS);
-//   sh.appendRow(["", name, lat, lng, "100"]);
-//   return { ok: true, code: "LOCATION_ADD_SUCCESS" };
-// }
 
 /**
  * 取得所有打卡地點
@@ -1552,168 +1213,7 @@ function getReviewRequest() {
   
   return { ok: true, reviewRequest: reviewRequest };
 }
-// function getReviewRequest() {
-//   Logger.log('📋 開始取得待審核補打卡申請');
 
-//   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_ADJUST_PUNCH);
-  
-//   if (!sheet) {
-//     Logger.log(❌ 找不到「補打卡申請」工作表');
-//     return { ok: false, msg: "找不到補打卡申請工作表" };
-//   }
-  
-//   const values = sheet.getDataRange().getValues();
-  
-//   if (values.length <= 1) {
-//     Logger.log('⚠️ 補打卡申請工作表只有標題，沒有資料');
-//     return { ok: true, reviewRequest: [] };
-//   }
-  
-//   const headers = values[0];
-  
-//   Logger.log('📋 標題列: ' + headers.join(', '));
-  
-//   // 篩選「待審核」的申請
-//   const reviewRequest = values.filter((row, index) => {
-//     if (index === 0 || !row[0]) return false;
-    
-//     const statusCol = headers.indexOf('狀態');
-//     const status = row[statusCol];
-    
-//     return status === '待審核';
-    
-//   }).map(row => {
-//     const actualRowNumber = values.indexOf(row) + 1;
-    
-//     // 從工作表讀取各欄位
-//     const applicationId = row[headers.indexOf('申請ID')];
-//     const userId = row[headers.indexOf('用戶ID')];
-//     const name = row[headers.indexOf('姓名')];
-//     const date = row[headers.indexOf('日期')];
-//     const time = row[headers.indexOf('時間')];
-//     const type = row[headers.indexOf('類型')];
-//     const reason = row[headers.indexOf('原因')];
-//     const applicationTime = row[headers.indexOf('申請時間')];
-    
-//     Logger.log(`   ${actualRowNumber}. ${name} - ${date} ${time} ${type}`);
-//     Logger.log(`      理由: ${reason}`);
-    
-//     return {
-//       id: actualRowNumber,
-//       applicationId: applicationId,
-//       userId: userId,
-//       name: name,
-//       type: type,
-//       remark: `補${type}卡`,
-//       applicationPeriod: `${date} ${time}`,
-//       note: reason || ''  // ⭐ 補打卡理由
-//     };
-//   });
-  
-//   Logger.log('');
-//   Logger.log(`✅ 找到 ${reviewRequest.length} 筆待審核申請`);
-  
-//   return { ok: true, reviewRequest: reviewRequest };
-// }
-// function getReviewRequest() {
-//   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_ATTENDANCE);
-//   const values = sheet.getDataRange().getValues();
-//   const headers = values[0];
-
-//   const reviewRequest = values.filter((row, index) => {
-//     if (index === 0 || !row[0]) return false;
-
-//     const remarkCol = headers.indexOf('備註');
-//     const auditCol = headers.indexOf('管理員審核');
-    
-//     return row[remarkCol] === "補打卡" && row[auditCol] === "?";
-//   }).map(row => {
-//     const actualRowNumber = values.indexOf(row) + 1;
-    
-//     // ⭐⭐⭐ 關鍵修正：加入 note 欄位（理由在「裝置資訊」欄）
-//     const deviceCol = headers.indexOf('裝置資訊');
-//     const noteText = deviceCol >= 0 ? (row[deviceCol] || '') : '';
-    
-//     return {
-//       id: actualRowNumber,
-//       name: row[headers.indexOf('打卡人員')],
-//       type: row[headers.indexOf('打卡類別')],
-//       remark: row[headers.indexOf('備註')],
-//       applicationPeriod: formatDateTime(row[headers.indexOf('打卡時間')]),
-//       note: noteText  // ⭐ 新增：補打卡理由
-//     };
-//   });
-  
-//   Logger.log('📋 待審核請求: ' + reviewRequest.length + ' 筆');
-  
-//   // 除錯：顯示第一筆的 note
-//   if (reviewRequest.length > 0) {
-//     Logger.log('   第一筆 note: ' + reviewRequest[0].note);
-//   }
-  
-//   return { ok: true, reviewRequest: reviewRequest };
-// }
-
-/**
- * 🧪 測試 getReviewRequest 是否包含 note
- */
-function testGetReviewRequestWithNote() {
-  Logger.log('🧪 測試 getReviewRequest');
-  Logger.log('');
-  
-  const result = getReviewRequest();
-  
-  Logger.log('📤 結果:');
-  Logger.log('   ok: ' + result.ok);
-  Logger.log('   筆數: ' + result.reviewRequest.length);
-  Logger.log('');
-  
-  if (result.reviewRequest.length > 0) {
-    Logger.log('📋 第一筆資料:');
-    const first = result.reviewRequest[0];
-    Logger.log('   id: ' + first.id);
-    Logger.log('   name: ' + first.name);
-    Logger.log('   type: ' + first.type);
-    Logger.log('   remark: ' + first.remark);
-    Logger.log('   note: ' + (first.note || '(空)'));
-    Logger.log('');
-    
-    if (first.note) {
-      Logger.log('✅✅✅ note 欄位存在！');
-    } else {
-      Logger.log('❌ note 欄位是空的');
-    }
-  }
-}
-// function getReviewRequest() {
-//   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_ATTENDANCE);
-//   const values = sheet.getDataRange().getValues();
-//   const headers = values[0];
-
-//   const reviewRequest = values.filter((row, index) => {
-//     if (index === 0 || !row[0]) return false;
-
-//     const remarkCol = headers.indexOf('備註');
-//     const auditCol = headers.indexOf('管理員審核');
-    
-//     return row[remarkCol] === "補打卡" && row[auditCol] === "?";
-//   }).map(row => {
-//     const actualRowNumber = values.indexOf(row) + 1;
-//     return {
-//       id: actualRowNumber,
-//       name: row[headers.indexOf('打卡人員')],
-//       type: row[headers.indexOf('打卡類別')],
-//       remark: row[headers.indexOf('備註')],
-//       applicationPeriod: formatDateTime(row[headers.indexOf('打卡時間')])
-//     };
-//   });
-  
-//   return { ok: true, reviewRequest: reviewRequest };
-// }
-
-/**
- * 更新審核狀態（含 LINE 通知）
- */
 /**
  * ✅ 更新審核狀態（完整修正版 - 從補打卡申請工作表讀取）
  */
@@ -1904,15 +1404,24 @@ function updateReviewStatus(rowNumber, status, note) {
 
 
 // ==================== 用戶角色管理 ====================
-
 /**
- * ✅ 更新用戶角色
+ * ✅ 更新用戶角色（支援多種角色）
  */
 function updateUserRole(userId, newRole) {
   try {
     Logger.log('📝 開始更新用戶角色');
     Logger.log('   userId: ' + userId);
     Logger.log('   newRole: ' + newRole);
+    
+    // ⭐ 驗證角色是否合法
+    const validRoles = ['管理員', '組長', '組員', '行政', '會計', '繪圖', '員工'];
+    
+    if (!validRoles.includes(newRole)) {
+      return {
+        ok: false,
+        msg: '無效的角色'
+      };
+    }
     
     const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_EMPLOYEES);
     
@@ -1925,13 +1434,16 @@ function updateUserRole(userId, newRole) {
     
     const data = sheet.getDataRange().getValues();
     
-    // 檢查是否為最後一個管理員
-    if (newRole === 'employee') {
+    // ⭐ 檢查是否為最後一個管理員
+    if (newRole !== '管理員') {
       const adminCount = data.filter((row, index) => 
-        index > 0 && row[5] === '管理員'  // F 欄: 部門
+        index > 0 && row[5] === '管理員'
       ).length;
       
-      if (adminCount <= 1) {
+      // 找出目標用戶的目前角色
+      const targetUser = data.find((row, index) => index > 0 && row[0] === userId);
+      
+      if (targetUser && targetUser[5] === '管理員' && adminCount <= 1) {
         return {
           ok: false,
           msg: '至少需要保留一位管理員'
@@ -1941,11 +1453,10 @@ function updateUserRole(userId, newRole) {
     
     // 尋找用戶並更新
     for (let i = 1; i < data.length; i++) {
-      if (data[i][0] === userId) {  // A 欄: userId
-        const newDept = newRole === 'admin' ? '管理員' : '員工';
-        sheet.getRange(i + 1, 6).setValue(newDept);  // F 欄: 部門
+      if (data[i][0] === userId) {
+        sheet.getRange(i + 1, 6).setValue(newRole);  // F 欄: 部門
         
-        Logger.log('✅ 已更新角色為: ' + newDept);
+        Logger.log('✅ 已更新角色為: ' + newRole);
         
         return {
           ok: true,
@@ -2030,495 +1541,7 @@ function deleteUser(userId) {
     };
   }
 }
-// function updateReviewStatus(rowNumber, status, note) {
-//   try {
-//     Logger.log('═══════════════════════════════════════');
-//     Logger.log('📋 開始審核補打卡');
-//     Logger.log('   行號: ' + rowNumber);
-//     Logger.log('   狀態: ' + status);
-    
-//     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_ADJUST_PUNCH);
-    
-//     if (!sheet) {
-//       return { ok: false, msg: "找不到補打卡申請工作表" };
-//     }
-    
-//     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    
-//     // 找出欄位索引
-//     const statusCol = headers.indexOf('狀態') + 1;
-//     const reviewerCol = headers.indexOf('審核人') + 1;
-//     const reviewTimeCol = headers.indexOf('審核時間') + 1;
-    
-//     if (statusCol === 0) {
-//       return { ok: false, msg: "找不到「狀態」欄位" };
-//     }
-    
-//     // 取得該行的申請資料
-//     const record = sheet.getRange(rowNumber, 1, 1, sheet.getLastColumn()).getValues()[0];
-    
-//     const userId = record[headers.indexOf('用戶ID')];
-//     const employeeName = record[headers.indexOf('姓名')];
-//     const dateValue = record[headers.indexOf('日期')];
-//     const timeValue = record[headers.indexOf('時間')];
-//     const punchType = record[headers.indexOf('類型')];
-    
-//     // ✅ 修正：智能格式化日期時間
-//     let punchDate, punchTime;
-    
-//     if (dateValue instanceof Date) {
-//       punchDate = Utilities.formatDate(dateValue, Session.getScriptTimeZone(), 'yyyy-MM-dd');
-//     } else {
-//       punchDate = String(dateValue);
-//     }
-    
-//     if (timeValue instanceof Date) {
-//       punchTime = Utilities.formatDate(timeValue, Session.getScriptTimeZone(), 'HH:mm');
-//     } else {
-//       punchTime = String(timeValue);
-//     }
-    
-//     Logger.log(`   日期: ${punchDate}`);
-//     Logger.log(`   時間: ${punchTime}`);
-    
-//     // 更新審核狀態
-//     const statusText = (status === "v") ? "已核准" : "已拒絕";
-    
-//     sheet.getRange(rowNumber, statusCol).setValue(statusText);
-//     sheet.getRange(rowNumber, reviewerCol).setValue("系統管理員");
-//     sheet.getRange(rowNumber, reviewTimeCol).setValue(new Date());
-    
-//     Logger.log('✅ 已更新審核狀態為: ' + statusText);
-    
-//     // 如果核准，寫入出勤紀錄
-//     if (status === "v") {
-//       const attendanceSheet = SpreadsheetApp.getActive().getSheetByName(SHEET_ATTENDANCE);
-      
-//       if (attendanceSheet) {
-//         // ✅ 使用格式化後的日期時間
-//         const punchDateTime = new Date(`${punchDate} ${punchTime}`);
-        
-//         attendanceSheet.appendRow([
-//           punchDateTime,
-//           userId,
-//           '',  // 部門
-//           employeeName,
-//           punchType,
-//           '',  // GPS
-//           '',  // 地點
-//           '補打卡',
-//           'v',
-//           note || ''
-//         ]);
-        
-//         Logger.log('✅ 已寫入出勤紀錄');
-//       }
-//     }
-    
-//     // 發送 LINE 通知
-//     const isApproved = (status === "v");
-    
-//     try {
-//       notifyPunchReview(
-//         userId,
-//         employeeName,
-//         punchDate,
-//         punchTime,
-//         punchType,
-//         "系統管理員",
-//         isApproved,
-//         note || ""
-//       );
-      
-//       Logger.log('✅ LINE 通知已發送');
-//     } catch (notifyError) {
-//       Logger.log('⚠️ LINE 通知發送失敗: ' + notifyError.message);
-//     }
-    
-//     Logger.log('═══════════════════════════════════════');
-//     return { ok: true, msg: "審核成功並已通知員工" };
-    
-//   } catch (err) {
-//     Logger.log('❌ updateReviewStatus 錯誤: ' + err.message);
-//     return { ok: false, msg: `審核失敗：${err.message}` };
-//   }
-// }
-// function updateReviewStatus(rowNumber, status, note) {
-//   try {
-//     Logger.log('═══════════════════════════════════════');
-//     Logger.log('📋 開始審核補打卡');
-//     Logger.log('   行號: ' + rowNumber);
-//     Logger.log('   狀態: ' + status);
-    
-//     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_ADJUST_PUNCH);
-    
-//     if (!sheet) {
-//       return { ok: false, msg: "找不到補打卡申請工作表" };
-//     }
-    
-//     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    
-//     // 找出「狀態」欄位
-//     const statusCol = headers.indexOf('狀態') + 1;
-//     const reviewerCol = headers.indexOf('審核人') + 1;
-//     const reviewTimeCol = headers.indexOf('審核時間') + 1;
-    
-//     if (statusCol === 0) {
-//       return { ok: false, msg: "找不到「狀態」欄位" };
-//     }
-    
-//     // 取得該行的申請資料
-//     const record = sheet.getRange(rowNumber, 1, 1, sheet.getLastColumn()).getValues()[0];
-    
-//     const userId = record[headers.indexOf('用戶ID')];
-//     const employeeName = record[headers.indexOf('姓名')];
-//     const punchDate = record[headers.indexOf('日期')];
-//     const punchTime = record[headers.indexOf('時間')];
-//     const punchType = record[headers.indexOf('類型')];
-    
-//     // ✅ 更新審核狀態
-//     const statusText = (status === "v") ? "已核准" : "已拒絕";
-    
-//     sheet.getRange(rowNumber, statusCol).setValue(statusText);
-//     sheet.getRange(rowNumber, reviewerCol).setValue("系統管理員");
-//     sheet.getRange(rowNumber, reviewTimeCol).setValue(new Date());
-    
-//     Logger.log('✅ 已更新審核狀態為: ' + statusText);
-    
-//     // ✅ 如果核准，寫入「出勤紀錄」工作表
-//     if (status === "v") {
-//       const attendanceSheet = SpreadsheetApp.getActive().getSheetByName(SHEET_ATTENDANCE);
-      
-//       if (attendanceSheet) {
-//         const punchDateTime = new Date(`${punchDate} ${punchTime}`);
-        
-//         attendanceSheet.appendRow([
-//           punchDateTime,
-//           userId,
-//           record[headers.indexOf('姓名')],  // 部門欄位可能需要調整
-//           employeeName,
-//           punchType,
-//           '',  // GPS
-//           '',  // 地點
-//           '補打卡',
-//           'v',  // 已核准
-//           note || ''
-//         ]);
-        
-//         Logger.log('✅ 已寫入出勤紀錄');
-//       }
-//     }
-    
-//     // ✅ 發送 LINE 通知
-//     const isApproved = (status === "v");
-    
-//     try {
-//       notifyPunchReview(
-//         userId,
-//         employeeName,
-//         punchDate,
-//         punchTime,
-//         punchType,
-//         "系統管理員",
-//         isApproved,
-//         note || ""
-//       );
-      
-//       Logger.log('✅ LINE 通知已發送');
-//     } catch (notifyError) {
-//       Logger.log('⚠️ LINE 通知發送失敗: ' + notifyError.message);
-//     }
-    
-//     Logger.log('═══════════════════════════════════════');
-//     return { ok: true, msg: "審核成功並已通知員工" };
-    
-//   } catch (err) {
-//     Logger.log('❌ updateReviewStatus 錯誤: ' + err.message);
-//     return { ok: false, msg: `審核失敗：${err.message}` };
-//   }
-// }
 
-/**
- * 🧪 測試補打卡申請功能（完整流程）
- */
-function testAdjustPunchFlow() {
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('🧪 測試補打卡申請完整流程');
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('');
-  
-  // 步驟 1：檢查工作表是否存在
-  Logger.log('📋 步驟 1：檢查工作表');
-  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_ADJUST_PUNCH);
-  
-  if (!sheet) {
-    Logger.log('❌ 找不到「補打卡申請」工作表');
-    Logger.log('   請確認工作表名稱是否正確');
-    return;
-  }
-  
-  Logger.log('✅ 工作表存在');
-  Logger.log('');
-  
-  // 步驟 2：檢查欄位結構
-  Logger.log('📋 步驟 2：檢查欄位結構');
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  
-  Logger.log('工作表欄位:');
-  headers.forEach((h, i) => {
-    const column = String.fromCharCode(65 + i);
-    Logger.log(`   ${column} (${i + 1}): ${h}`);
-  });
-  Logger.log('');
-  
-  // 步驟 3：模擬提交補打卡
-  Logger.log('📋 步驟 3：模擬提交補打卡');
-  
-  const testToken = 'a8f8ca99-97d6-4643-ad8e-67a73f2bb649'; // ⚠️ 替換成你的有效 token
-  const testType = '上班';
-  const testDate = new Date('2025-12-16 09:00:00');
-  const testLat = 25.0330;
-  const testLng = 121.5654;
-  const testNote = '測試補打卡理由：忘記打卡';
-  
-  Logger.log('測試參數:');
-  Logger.log('   token: ' + testToken.substring(0, 20) + '...');
-  Logger.log('   type: ' + testType);
-  Logger.log('   date: ' + testDate);
-  Logger.log('   note: ' + testNote);
-  Logger.log('');
-  
-  const result = punchAdjusted(testToken, testType, testDate, testLat, testLng, testNote);
-  
-  Logger.log('📤 提交結果:');
-  Logger.log(JSON.stringify(result, null, 2));
-  Logger.log('');
-  
-  if (!result.ok) {
-    Logger.log('❌ 提交失敗');
-    return;
-  }
-  
-  Logger.log('✅ 提交成功');
-  Logger.log('');
-  
-  // 步驟 4：檢查是否寫入工作表
-  Logger.log('📋 步驟 4：檢查是否寫入工作表');
-  const lastRow = sheet.getLastRow();
-  const lastRecord = sheet.getRange(lastRow, 1, 1, sheet.getLastColumn()).getValues()[0];
-  
-  Logger.log('最後一筆記錄:');
-  headers.forEach((h, i) => {
-    Logger.log(`   ${h}: ${lastRecord[i]}`);
-  });
-  Logger.log('');
-  
-  // 步驟 5：測試 getReviewRequest
-  Logger.log('📋 步驟 5：測試取得待審核列表');
-  const reviewResult = getReviewRequest();
-  
-  Logger.log('📤 查詢結果:');
-  Logger.log('   ok: ' + reviewResult.ok);
-  Logger.log('   筆數: ' + (reviewResult.reviewRequest ? reviewResult.reviewRequest.length : 0));
-  Logger.log('');
-  
-  if (reviewResult.reviewRequest && reviewResult.reviewRequest.length > 0) {
-    Logger.log('第一筆待審核:');
-    const first = reviewResult.reviewRequest[0];
-    Logger.log('   id: ' + first.id);
-    Logger.log('   name: ' + first.name);
-    Logger.log('   type: ' + first.type);
-    Logger.log('   applicationPeriod: ' + first.applicationPeriod);
-    Logger.log('   note: ' + first.note + ' ⭐');
-    Logger.log('');
-  }
-  
-  // 步驟 6：測試審核功能
-  Logger.log('📋 步驟 6：測試審核功能');
-  
-  if (reviewResult.reviewRequest && reviewResult.reviewRequest.length > 0) {
-    const testRowNumber = reviewResult.reviewRequest[0].id;
-    
-    Logger.log('測試核准第 ' + testRowNumber + ' 行');
-    const approveResult = updateReviewStatus(testRowNumber, 'v', '測試核准');
-    
-    Logger.log('📤 審核結果:');
-    Logger.log(JSON.stringify(approveResult, null, 2));
-    Logger.log('');
-  }
-  
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('✅✅✅ 測試完成！');
-  Logger.log('');
-  Logger.log('📋 檢查清單:');
-  Logger.log('   1. ✅ 工作表存在');
-  Logger.log('   2. ✅ 欄位結構正確');
-  Logger.log('   3. ✅ 補打卡申請成功');
-  Logger.log('   4. ✅ 資料寫入工作表');
-  Logger.log('   5. ✅ getReviewRequest 包含 note');
-  Logger.log('   6. ✅ 審核功能正常');
-  Logger.log('');
-  Logger.log('🎯 現在可以測試前端了！');
-}
-// function updateReviewStatus(rowNumber, status, note) {
-//   try {
-//     Logger.log('═══════════════════════════════════════');
-//     Logger.log('📋 開始審核補打卡');
-//     Logger.log('   行號: ' + rowNumber);
-//     Logger.log('   狀態: ' + status);
-//     Logger.log('   備註: ' + (note || '無'));
-    
-//     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_ATTENDANCE);
-//     if (!sheet) {
-//       Logger.log('❌ 找不到打卡記錄工作表');
-//       return { ok: false, msg: "找不到打卡記錄工作表" };
-//     }
-    
-//     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-//     Logger.log('📋 標題列: ' + headers.join(', '));
-    
-//     // 找出「管理員審核」欄位
-//     const reviewStatusCol = headers.indexOf('管理員審核') + 1;
-//     if (reviewStatusCol === 0) {
-//       Logger.log('❌ 找不到「管理員審核」欄位');
-//       return { ok: false, msg: "試算表缺少必要欄位：'管理員審核'" };
-//     }
-    
-//     Logger.log('✅ 管理員審核欄位: 第 ' + reviewStatusCol + ' 欄');
-    
-//     // 取得該行的完整記錄
-//     const record = sheet.getRange(rowNumber, 1, 1, sheet.getLastColumn()).getValues()[0];
-//     Logger.log('📄 打卡記錄: ' + JSON.stringify(record));
-    
-//     // ✅ 根據標題列動態取得欄位索引
-//     const userIdCol = headers.indexOf('userId');
-//     const nameCol = headers.indexOf('打卡人員');
-//     const typeCol = headers.indexOf('打卡類別');
-//     const dateCol = headers.indexOf('打卡時間');
-    
-//     Logger.log('📍 欄位索引:');
-//     Logger.log('   userId: ' + userIdCol);
-//     Logger.log('   打卡人員: ' + nameCol);
-//     Logger.log('   打卡類別: ' + typeCol);
-//     Logger.log('   打卡時間: ' + dateCol);
-    
-//     // 取得資料
-//     const userId = record[userIdCol];
-//     const employeeName = record[nameCol];
-//     const punchType = record[typeCol];
-//     const punchDateTime = record[dateCol];
-    
-//     Logger.log('');
-//     Logger.log('📊 解析資料:');
-//     Logger.log('   userId: ' + userId);
-//     Logger.log('   員工姓名: ' + employeeName);
-//     Logger.log('   打卡類型: ' + punchType);
-//     Logger.log('   打卡時間: ' + punchDateTime);
-    
-//     if (!userId || !employeeName) {
-//       Logger.log('❌ 缺少必要資料');
-//       return { ok: false, msg: "記錄資料不完整" };
-//     }
-    
-//     // 格式化日期和時間
-//     const punchDate = formatDate(punchDateTime);
-//     const punchTime = formatTime(punchDateTime);
-    
-//     Logger.log('   格式化日期: ' + punchDate);
-//     Logger.log('   格式化時間: ' + punchTime);
-    
-//     // ✅ 更新審核狀態
-//     sheet.getRange(rowNumber, reviewStatusCol).setValue(status);
-//     Logger.log('✅ 已更新審核狀態為: ' + status);
-    
-//     // ✅ 發送 LINE 通知
-//     const isApproved = (status === "v");
-//     const reviewer = "系統管理員";
-    
-//     Logger.log('');
-//     Logger.log('📤 準備發送 LINE 通知...');
-//     Logger.log('   審核結果: ' + (isApproved ? '通過' : '拒絕'));
-    
-//     try {
-//       notifyPunchReview(
-//         userId,
-//         employeeName,
-//         punchDate,
-//         punchTime,
-//         punchType,
-//         reviewer,
-//         isApproved,
-//         note || ""
-//       );
-      
-//       Logger.log('✅ LINE 通知已發送');
-//     } catch (notifyError) {
-//       Logger.log('⚠️ LINE 通知發送失敗: ' + notifyError.message);
-//       // 不要因為通知失敗而中斷審核流程
-//     }
-    
-//     Logger.log('═══════════════════════════════════════');
-//     return { ok: true, msg: "審核成功並已通知員工" };
-    
-//   } catch (err) {
-//     Logger.log('❌ updateReviewStatus 錯誤: ' + err.message);
-//     Logger.log('   錯誤堆疊: ' + err.stack);
-//     return { ok: false, msg: `審核失敗：${err.message}` };
-//   }
-// }
-
-/**
- * 🧪 測試審核通知流程
- */
-function testApproveWithNotification() {
-  Logger.log('🧪 測試審核 + LINE 通知');
-  Logger.log('');
-  
-  // ⚠️ 請先在 Google Sheet 找一筆「補打卡」且「管理員審核 = ?」的記錄
-  const testRowNumber = 20; // 替換成實際的行號
-  
-  Logger.log('📋 測試核准補打卡...');
-  const approveResult = updateReviewStatus(testRowNumber, "v", "核准");
-  
-  Logger.log('');
-  Logger.log('📤 審核結果:');
-  Logger.log(JSON.stringify(approveResult, null, 2));
-  
-  if (approveResult.ok) {
-    Logger.log('');
-    Logger.log('✅✅✅ 測試成功！');
-    Logger.log('   請檢查 LINE 是否收到通知');
-  } else {
-    Logger.log('');
-    Logger.log('❌ 測試失敗');
-  }
-}
-
-/**
- * 🧪 測試拒絕通知流程
- */
-function testRejectWithNotification() {
-  Logger.log('🧪 測試拒絕 + LINE 通知');
-  Logger.log('');
-  
-  const testRowNumber = 21; // 替換成實際的行號
-  
-  Logger.log('📋 測試拒絕補打卡...');
-  const rejectResult = updateReviewStatus(testRowNumber, "x", "時間不符，請重新申請");
-  
-  Logger.log('');
-  Logger.log('📤 審核結果:');
-  Logger.log(JSON.stringify(rejectResult, null, 2));
-  
-  if (rejectResult.ok) {
-    Logger.log('');
-    Logger.log('✅✅✅ 測試成功！');
-    Logger.log('   請檢查 LINE 是否收到拒絕通知');
-  } else {
-    Logger.log('');
-    Logger.log('❌ 測試失敗');
-  }
-}
 // ==================== 工具函數 ====================
 
 /**
@@ -2574,45 +1597,6 @@ function formatTime(date) {
     return String(date);
   }
 }
-
-
-function debugCheckSession() {
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('🔍 診斷 checkSession_');
-  Logger.log('═══════════════════════════════════════');
-  
-  const token = '1fb23a74-f5ee-4d87-bcf7-2bcde4a13d17';  // 你的有效 token
-  
-  Logger.log('📡 Token: ' + token);
-  Logger.log('');
-  
-  const session = checkSession_(token);
-  
-  Logger.log('📤 checkSession_ 返回結果:');
-  Logger.log(JSON.stringify(session, null, 2));
-  Logger.log('');
-  
-  Logger.log('🔍 詳細檢查:');
-  Logger.log('   - session 存在: ' + (session ? '是' : '否'));
-  Logger.log('   - session.ok: ' + session.ok);
-  Logger.log('   - session.user 存在: ' + (session.user ? '是' : '否'));
-  
-  if (session.user) {
-    Logger.log('');
-    Logger.log('👤 User 物件內容:');
-    Logger.log('   - userId: ' + session.user.userId);
-    Logger.log('   - employeeId: ' + session.user.employeeId);
-    Logger.log('   - name: ' + session.user.name);
-    Logger.log('   - dept: ' + session.user.dept);
-    Logger.log('   - email: ' + session.user.email);
-    Logger.log('   - status: ' + session.user.status);
-  } else {
-    Logger.log('❌ session.user 是 null 或 undefined');
-  }
-  
-  Logger.log('═══════════════════════════════════════');
-}
-
 
 /**
  * 取得員工指定月份的詳細打卡資料（用於圖表分析）
@@ -2722,8 +1706,6 @@ function getEmployeeMonthlyPunchData(employeeId, yearMonth) {
   }
 }
 
-// DbOperations.gs - 修正後的 updateEmployeeName 函數
-
 /**
  * ✅ 修正版：更新員工姓名並設定鎖定標記
  */
@@ -2808,23 +1790,6 @@ function updateEmployeeName(userId, newName) {
   }
 }
 /**
- * 🧪 測試更新姓名
- */
-function testUpdateEmployeeName() {
-  Logger.log('🧪 測試更新員工姓名');
-  Logger.log('');
-  
-  // ⚠️ 替換成實際的 userId
-  const testUserId = 'Ud3b574f260f5a777337158ccd4ff0ba2';
-  const newName = '王小明';
-  
-  const result = updateEmployeeName(testUserId, newName);
-  
-  Logger.log('📤 結果:');
-  Logger.log(JSON.stringify(result, null, 2));
-}
-
-/**
  * 根據 token 取得使用者資料
  */
 function getUserByToken(token) {
@@ -2838,100 +1803,4 @@ function getUserByToken(token) {
     Logger.log('❌ getUserByToken 錯誤: ' + error);
     return null;
   }
-}
-
-
-/**
- * 🧪 測試公告系統（改良版）
- */
-function testAnnouncementSystemImproved() {
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('🧪 測試公告系統（改良版）');
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('');
-  
-  const testToken = 'f8eeb016-b89a-4cb5-8737-8c904ca680ab';  // ⚠️ 替換成你的 token
-  
-  // ✅ 測試 1：新增公告
-  Logger.log('📝 測試 1：新增公告');
-  const addResult = handleAddAnnouncement({
-    token: testToken,
-    title: '測試公告 - ' + new Date().getTime(),
-    content: '這是一個測試公告',
-    priority: 'normal'
-  });
-  
-  Logger.log('   ok: ' + addResult.ok);
-  
-  if (!addResult.ok) {
-    Logger.log('❌ 新增失敗: ' + addResult.msg);
-    Logger.log('═══════════════════════════════════════');
-    return;
-  }
-  
-  const announcementId = addResult.announcement.id;
-  Logger.log('   ✅ 新增成功');
-  Logger.log('   ID: ' + announcementId);
-  Logger.log('   ID 型別: ' + typeof announcementId);
-  Logger.log('');
-  
-  // ✅ 測試 2：取得公告
-  Logger.log('📋 測試 2：取得公告');
-  const getResult = handleGetAnnouncements({});
-  
-  Logger.log('   ok: ' + getResult.ok);
-  Logger.log('   公告數: ' + (getResult.announcements ? getResult.announcements.length : 0));
-  
-  if (getResult.ok && getResult.announcements.length > 0) {
-    const latest = getResult.announcements[0];
-    Logger.log('   最新公告:');
-    Logger.log('     - ID: ' + latest.id + ' (' + typeof latest.id + ')');
-    Logger.log('     - 標題: ' + latest.title);
-  }
-  Logger.log('');
-  
-  // ⏸️ 等待 2 秒（確保資料已寫入）
-  Logger.log('⏸️ 等待 2 秒...');
-  Utilities.sleep(2000);
-  Logger.log('');
-  
-  // ✅ 測試 3：刪除公告
-  Logger.log('🗑️ 測試 3：刪除公告');
-  Logger.log('   準備刪除的 ID: ' + announcementId + ' (' + typeof announcementId + ')');
-  
-  const deleteResult = handleDeleteAnnouncement({
-    token: testToken,
-    id: announcementId
-  });
-  
-  Logger.log('');
-  Logger.log('   ok: ' + deleteResult.ok);
-  Logger.log('   msg: ' + deleteResult.msg);
-  Logger.log('');
-  
-  if (deleteResult.ok) {
-    Logger.log('✅✅✅ 刪除成功！');
-    
-    // ✅ 測試 4：確認刪除
-    Logger.log('');
-    Logger.log('🔍 測試 4：確認刪除');
-    const finalCheck = handleGetAnnouncements({});
-    
-    if (finalCheck.ok) {
-      const stillExists = finalCheck.announcements.some(a => String(a.id) === String(announcementId));
-      
-      if (stillExists) {
-        Logger.log('   ❌ 公告仍存在（刪除失敗）');
-      } else {
-        Logger.log('   ✅ 公告已不存在（刪除成功）');
-      }
-    }
-  } else {
-    Logger.log('❌ 刪除失敗: ' + deleteResult.msg);
-  }
-  
-  Logger.log('');
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('🎉 測試完成！');
-  Logger.log('═══════════════════════════════════════');
 }

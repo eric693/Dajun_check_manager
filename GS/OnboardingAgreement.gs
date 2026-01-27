@@ -301,7 +301,7 @@ function handleUpdateEmployeeOnboardingData(params) {
 
 
 /**
- * ✅ 處理提交入職切結書簽核
+ * ✅ 處理提交入職切結書簽核（增強版）
  */
 function handleSubmitOnboardingAgreement(params) {
   try {
@@ -322,13 +322,43 @@ function handleSubmitOnboardingAgreement(params) {
     
     Logger.log('👤 提交者: ' + user.name + ' (' + user.userId + ')');
     
-    // 驗證必要參數
-    if (!params.agreedTerms || params.agreedTerms !== 'true') {
-      Logger.log('❌ 未勾選同意條款');
-      return { ok: false, msg: "請勾選同意所有切結書條款" };
+    // ⭐⭐⭐ 修正：詳細驗證所有條款是否勾選
+    const requiredTerms = [
+      'agreeConfidentiality',    // 保密義務
+      'agreeNonCompete',         // 競業禁止
+      'agreeIpRights',           // 智慧財產權
+      'agreeLiability',          // 違約責任
+      'agreeProbation',          // 試用期間
+      'agreeEquipment',          // 工具領用
+      'agreeSafety'              // 安全規定
+    ];
+    
+    Logger.log('📋 檢查條款勾選狀態...');
+    
+    const uncheckedTerms = [];
+    requiredTerms.forEach(term => {
+      const value = params[term];
+      Logger.log(`   ${term}: ${value}`);
+      
+      if (value !== 'true' && value !== true) {
+        uncheckedTerms.push(term);
+      }
+    });
+    
+    if (uncheckedTerms.length > 0) {
+      Logger.log('❌ 有條款未勾選:');
+      uncheckedTerms.forEach(term => {
+        Logger.log('   - ' + term);
+      });
+      
+      return { 
+        ok: false, 
+        msg: `請勾選所有切結書條款（尚有 ${uncheckedTerms.length} 項未勾選）`,
+        uncheckedTerms: uncheckedTerms
+      };
     }
     
-    Logger.log('✅ 已勾選同意條款');
+    Logger.log('✅ 所有條款已勾選');
     
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     let sheet = ss.getSheetByName(SHEET_ONBOARDING);
@@ -339,23 +369,30 @@ function handleSubmitOnboardingAgreement(params) {
       
       sheet = ss.insertSheet(SHEET_ONBOARDING);
       
-      // 設定標題列
-      sheet.getRange(1, 1, 1, 11).setValues([[
-        'userId',           // A
-        '姓名',             // B
-        '身分證字號',       // C
-        '職位',             // D
-        '部門',             // E
-        '狀態',             // F
-        '簽核時間',         // G
-        '核准者',           // H
-        '核准時間',         // I
-        'IP位址',           // J
-        '備註'              // K
+      // ⭐ 更新標題列，增加條款勾選記錄欄位
+      sheet.getRange(1, 1, 1, 18).setValues([[
+        'userId',                    // A
+        '姓名',                      // B
+        '身分證字號',                // C
+        '職位',                      // D
+        '部門',                      // E
+        '狀態',                      // F
+        '簽核時間',                  // G
+        '核准者',                    // H
+        '核准時間',                  // I
+        'IP位址',                    // J
+        '保密義務',                  // K
+        '競業禁止',                  // L
+        '智慧財產權',                // M
+        '違約責任',                  // N
+        '試用期間',                  // O
+        '工具領用',                  // P
+        '安全規定',                  // Q
+        '備註'                       // R
       ]]);
       
       // 設定標題列格式
-      sheet.getRange(1, 1, 1, 11)
+      sheet.getRange(1, 1, 1, 18)
         .setBackground('#4a5568')
         .setFontColor('#ffffff')
         .setFontWeight('bold')
@@ -397,7 +434,7 @@ function handleSubmitOnboardingAgreement(params) {
           employeeInfo = {
             name: empData[i][1] || user.name,
             idNumber: empData[i][5] || '',  // F 欄是身分證字號
-            position: empData[i][28] || '', // AC 欄是職位
+            position: empData[i][22] || '', // W 欄是職位
             department: empData[i][3] || user.dept // D 欄是部門
           };
           
@@ -414,23 +451,31 @@ function handleSubmitOnboardingAgreement(params) {
       Logger.log('⚠️  找不到「入職職員名卡」，使用基本資料');
     }
     
+    // ⭐⭐⭐ 更新資料列，包含所有條款勾選狀態
     const rowData = [
-      user.userId,                    // A
-      employeeInfo.name,              // B
-      employeeInfo.idNumber,          // C
-      employeeInfo.position,          // D
-      employeeInfo.department,        // E
-      ONBOARDING_STATUS.SUBMITTED,    // F
-      now,                            // G
-      '',                             // H (核准者，待填)
-      '',                             // I (核准時間，待填)
-      ipAddress,                      // J
-      params.note || ''               // K
+      user.userId,                               // A
+      employeeInfo.name,                         // B
+      employeeInfo.idNumber,                     // C
+      employeeInfo.position,                     // D
+      employeeInfo.department,                   // E
+      ONBOARDING_STATUS.SUBMITTED,               // F
+      now,                                       // G
+      '',                                        // H (核准者，待填)
+      '',                                        // I (核准時間，待填)
+      ipAddress,                                 // J
+      params.agreeConfidentiality === 'true' ? '✓' : '✗',  // K
+      params.agreeNonCompete === 'true' ? '✓' : '✗',       // L
+      params.agreeIpRights === 'true' ? '✓' : '✗',         // M
+      params.agreeLiability === 'true' ? '✓' : '✗',        // N
+      params.agreeProbation === 'true' ? '✓' : '✗',        // O
+      params.agreeEquipment === 'true' ? '✓' : '✗',        // P
+      params.agreeSafety === 'true' ? '✓' : '✗',           // Q
+      params.note || ''                          // R
     ];
     
     if (existingRow > 0) {
       // 更新現有記錄
-      sheet.getRange(existingRow, 1, 1, 11).setValues([rowData]);
+      sheet.getRange(existingRow, 1, 1, 18).setValues([rowData]);
       Logger.log('✅ 更新記錄: Row ' + existingRow);
     } else {
       // 新增記錄
@@ -453,7 +498,8 @@ function handleSubmitOnboardingAgreement(params) {
       ok: true,
       msg: "入職切結書已成功提交，等待主管審核",
       data: {
-        submittedAt: now.toISOString()
+        submittedAt: now.toISOString(),
+        agreedTerms: requiredTerms.length
       }
     };
     
