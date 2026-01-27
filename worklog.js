@@ -157,7 +157,41 @@ async function loadWorklogRecords() {
         if (loadingEl) loadingEl.style.display = 'none';
         
         if (res.ok && res.worklogs && res.worklogs.length > 0) {
-            renderWorklogRecords(res.worklogs);
+            // ⭐ 新增：只顯示最近 3 天的記錄
+            const threeDaysAgo = new Date();
+            threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+            threeDaysAgo.setHours(0, 0, 0, 0);  // 設定為當天 00:00:00
+            
+            const recentWorklogs = res.worklogs.filter(log => {
+                try {
+                    let logDate;
+                    
+                    // 處理不同的日期格式
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(log.date)) {
+                        logDate = new Date(log.date);
+                    } else if (log.date.includes('T')) {
+                        logDate = new Date(log.date);
+                    } else {
+                        logDate = new Date(log.date);
+                    }
+                    
+                    // 比較日期（只比較日期部分，不比較時間）
+                    logDate.setHours(0, 0, 0, 0);
+                    return logDate >= threeDaysAgo;
+                    
+                } catch (e) {
+                    console.error('日期解析錯誤:', log.date, e);
+                    return false;
+                }
+            });
+            
+            console.log(`📊 工作日誌統計：總數 ${res.worklogs.length} 筆，最近 3 天 ${recentWorklogs.length} 筆`);
+            
+            if (recentWorklogs.length > 0) {
+                renderWorklogRecords(recentWorklogs);
+            } else {
+                if (emptyEl) emptyEl.style.display = 'block';
+            }
         } else {
             if (emptyEl) emptyEl.style.display = 'block';
         }
