@@ -734,7 +734,7 @@
   "WORKLOG_NO_RECORDS": "目前沒有工作日誌記錄",
   "WORKLOG_DATE_REQUIRED": "請選擇日期",
   "WORKLOG_HOURS_REQUIRED": "請輸入工作時數",
-  "WORKLOG_CONTENT_REQUIRED": "請填寫工作內容（至少 10 個字）",
+  "WORKLOG_CONTENT_REQUIRED": "請填寫工作內容（至少 2 個字）",
   "WORKLOG_SUBMIT_SUCCESS": "工作日誌提交成功！",
   "WORKLOG_SUBMIT_FAILED": "提交失敗",
   "WORKLOG_UPDATE_SUCCESS": "工作日誌更新成功！",

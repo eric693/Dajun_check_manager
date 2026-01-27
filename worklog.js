@@ -1155,8 +1155,8 @@ async function batchSubmitWorklogs() {
         return;
     }
     
-    if (!commonContent || commonContent.trim().length < 10) {
-        showNotification('❌ 請填寫工作內容（至少 10 個字）', 'error');
+    if (!commonContent || commonContent.trim().length < 2) {
+        showNotification('❌ 請填寫工作內容（至少 2 個字）', 'error');
         return;
     }
     
