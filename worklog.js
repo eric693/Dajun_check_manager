@@ -352,11 +352,19 @@ async function editWorklog(logId) {
             
             console.log('✅ 載入工作日誌資料:', log);
             
+            // ⭐⭐⭐ 關鍵修正：先切換到工作日誌標籤
+            const worklogTabBtn = document.getElementById('tab-worklog-btn');
+            if (worklogTabBtn) {
+                worklogTabBtn.click();  // 觸發標籤切換
+                
+                // ⭐ 等待一下讓 DOM 更新
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
             // ⭐⭐⭐ 修正：處理日期格式
             let formattedDate = log.date;
             if (log.date) {
                 try {
-                    // 如果是 ISO 格式（包含 T），轉換成 yyyy-MM-dd
                     if (log.date.includes('T')) {
                         const dateObj = new Date(log.date);
                         const year = dateObj.getFullYear();
@@ -364,10 +372,8 @@ async function editWorklog(logId) {
                         const day = String(dateObj.getDate()).padStart(2, '0');
                         formattedDate = `${year}-${month}-${day}`;
                     } else if (/^\d{4}-\d{2}-\d{2}$/.test(log.date)) {
-                        // 如果已經是 yyyy-MM-dd 格式，直接使用
                         formattedDate = log.date;
                     } else {
-                        // 其他格式，嘗試解析
                         const dateObj = new Date(log.date);
                         const year = dateObj.getFullYear();
                         const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -390,7 +396,7 @@ async function editWorklog(logId) {
             const hoursInput = document.getElementById('worklog-common-hours');
             const contentInput = document.getElementById('worklog-common-content');
             
-            if (dateInput) dateInput.value = formattedDate;  // ⭐ 使用格式化後的日期
+            if (dateInput) dateInput.value = formattedDate;
             if (weatherInput) weatherInput.value = log.weather || '';
             if (locationInput) locationInput.value = log.location || '';
             if (timeslotInput) timeslotInput.value = log.timeSlot || '';
@@ -405,7 +411,6 @@ async function editWorklog(logId) {
             if (container) {
                 container.innerHTML = '';
                 
-                // 新增一個員工卡片（預填資料）
                 worklogEmployeeCounter++;
                 const index = worklogEmployeeCounter;
                 
@@ -454,11 +459,8 @@ async function editWorklog(logId) {
                 }
             }
             
-            // 滾動到表單
-            const formContainer = document.querySelector('#worklog-tab-content');
-            if (formContainer) {
-                formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+            // ⭐⭐⭐ 滾動到表單頂部
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             
             showNotification('✏️ 進入編輯模式，修改後請點擊「更新工作日誌」', 'info');
         }
