@@ -265,47 +265,17 @@ function renderWorklogRecords(worklogs) {
         let statusIcon = '';
         let actionButtons = '';
         
-        // switch(log.status) {
-        //     case 'PENDING':
-        //         statusClass = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
-        //         statusText = safeTranslate('STATUS_PENDING', '待審核');
-        //         statusIcon = '⏳';
-        //         actionButtons = `
-        //             <button onclick="editWorklog('${log.id}')" 
-        //                     class="px-3 py-1.5 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors">
-        //                 ✏️ ${btnEdit}
-        //             </button>
-        //             <button onclick="deleteWorklog('${log.id}')" 
-        //                     class="px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors">
-        //                 🗑️ ${btnDelete}
-        //             </button>
-        //         `;
-        //         break;
-        //     case 'APPROVED':
-        //         statusClass = 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-        //         statusText = safeTranslate('STATUS_APPROVED', '已核准');
-        //         statusIcon = '✅';
-        //         break;
-        //     case 'REJECTED':
-        //         statusClass = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
-        //         statusText = safeTranslate('STATUS_REJECTED', '已拒絕');
-        //         statusIcon = '❌';
-        //         actionButtons = `
-        //             <button onclick="editWorklog('${log.id}')" 
-        //                     class="px-3 py-1.5 text-sm bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-colors">
-        //                 🔄 ${btnResubmit}
-        //             </button>
-        //         `;
-        //         break;
-        // }
-
         switch(log.status) {
             case 'PENDING':
                 statusClass = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
                 statusText = safeTranslate('STATUS_PENDING', '待審核');
                 statusIcon = '⏳';
-                // ⭐ 只保留刪除按鈕
+                // ⭐ 恢復編輯和刪除按鈕
                 actionButtons = `
+                    <button onclick="editWorklog('${log.id}')" 
+                            class="px-3 py-1.5 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors">
+                        ✏️ ${btnEdit}
+                    </button>
                     <button onclick="deleteWorklog('${log.id}')" 
                             class="px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors">
                         🗑️ ${btnDelete}
@@ -316,17 +286,16 @@ function renderWorklogRecords(worklogs) {
                 statusClass = 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
                 statusText = safeTranslate('STATUS_APPROVED', '已核准');
                 statusIcon = '✅';
-                // ⭐ 已核准的記錄不顯示任何按鈕
                 break;
             case 'REJECTED':
                 statusClass = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
                 statusText = safeTranslate('STATUS_REJECTED', '已拒絕');
                 statusIcon = '❌';
-                // ⭐ 已拒絕的記錄也只保留刪除按鈕
+                // ⭐ 已拒絕的記錄可以重新編輯
                 actionButtons = `
-                    <button onclick="deleteWorklog('${log.id}')" 
-                            class="px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors">
-                        🗑️ ${btnDelete}
+                    <button onclick="editWorklog('${log.id}')" 
+                            class="px-3 py-1.5 text-sm bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-colors">
+                        🔄 ${btnResubmit}
                     </button>
                 `;
                 break;
@@ -373,93 +342,209 @@ function renderWorklogRecords(worklogs) {
 }
 
 /**
- * 編輯工作日誌
+ * ✅ 編輯工作日誌（支援新欄位：天氣、地點、工作時段等）
  */
-// async function editWorklog(logId) {
-//     try {
-//         const res = await callApifetch(`getWorklogDetail&id=${logId}`);
-        
-//         if (res.ok && res.worklog) {
-//             const log = res.worklog;
-            
-//             const dateInput = document.getElementById('worklog-date');
-//             const hoursInput = document.getElementById('worklog-hours');
-//             const contentInput = document.getElementById('worklog-content');
-            
-//             if (dateInput) dateInput.value = log.date;
-//             if (hoursInput) hoursInput.value = log.hours;
-//             if (contentInput) contentInput.value = log.content;
-            
-//             document.getElementById('worklog-form-container')?.scrollIntoView({ 
-//                 behavior: 'smooth',
-//                 block: 'start'
-//             });
-            
-//             const submitBtn = document.getElementById('submit-worklog-btn');
-//             if (submitBtn) {
-//                 submitBtn.textContent = t('BTN_UPDATE') || '更新';
-//                 submitBtn.onclick = () => updateWorklog(logId);
-//             }
-            
-//             showNotification(t('WORKLOG_EDIT_MODE') || '進入編輯模式', 'info');
-//         }
-        
-//     } catch (error) {
-//         console.error('載入工作日誌失敗:', error);
-//         showNotification(t('LOAD_FAILED') || '載入失敗', 'error');
-//     }
-// }
-
-/**
- * 更新工作日誌
- */
-async function updateWorklog(logId) {
-    const dateInput = document.getElementById('worklog-date');
-    const hoursInput = document.getElementById('worklog-hours');
-    const contentInput = document.getElementById('worklog-content');
-    const submitBtn = document.getElementById('submit-worklog-btn');
-    
-    const date = dateInput?.value;
-    const hours = parseFloat(hoursInput?.value);
-    const content = contentInput?.value.trim();
-    
-    if (!date || !hours || !content || content.length < 10) {
-        showNotification(t('FORM_INCOMPLETE') || '請完整填寫表單', 'error');
-        return;
-    }
-    
-    const loadingText = t('UPDATING') || '更新中...';
-    generalButtonState(submitBtn, 'processing', loadingText);
-    
+async function editWorklog(logId) {
     try {
-        const params = new URLSearchParams({
-            id: logId,
-            date: date,
-            hours: hours,
-            content: content
-        });
+        console.log('📝 開始編輯工作日誌:', logId);
         
-        const res = await callApifetch(`updateWorklog&${params.toString()}`);
+        const res = await callApifetch(`getWorklogDetail&id=${logId}`);
         
-        if (res.ok) {
-            showNotification(t('WORKLOG_UPDATE_SUCCESS') || '工作日誌更新成功！', 'success');
+        if (res.ok && res.worklog) {
+            const log = res.worklog;
             
-            if (hoursInput) hoursInput.value = '';
-            if (contentInput) contentInput.value = '';
-            submitBtn.textContent = t('BTN_SUBMIT_WORKLOG') || '提交工作日誌';
-            submitBtn.onclick = submitWorklog;
+            console.log('✅ 載入工作日誌資料:', log);
             
-            await loadWorklogRecords();
-        } else {
-            showNotification(res.msg || t('UPDATE_FAILED') || '更新失敗', 'error');
+            // ⭐ 填入批量表單的共用欄位
+            const dateInput = document.getElementById('worklog-common-date');
+            const weatherInput = document.getElementById('worklog-common-weather');
+            const locationInput = document.getElementById('worklog-common-location');
+            const timeslotInput = document.getElementById('worklog-common-timeslot');
+            const hoursInput = document.getElementById('worklog-common-hours');
+            const contentInput = document.getElementById('worklog-common-content');
+            
+            if (dateInput) dateInput.value = log.date || '';
+            if (weatherInput) weatherInput.value = log.weather || '';
+            if (locationInput) locationInput.value = log.location || '';
+            if (timeslotInput) timeslotInput.value = log.timeSlot || '';
+            if (hoursInput) hoursInput.value = log.hours || '';
+            if (contentInput) contentInput.value = log.content || '';
+            
+            // ⭐ 清空員工列表並新增一個員工（編輯模式）
+            const container = document.getElementById('worklog-employees-container');
+            const emptyState = document.getElementById('worklog-empty-state');
+            const submitBtn = document.getElementById('batch-submit-worklog-btn');
+            
+            if (container) {
+                container.innerHTML = '';
+                
+                // 新增一個員工卡片（預填資料）
+                worklogEmployeeCounter++;
+                const index = worklogEmployeeCounter;
+                
+                const card = document.createElement('div');
+                card.className = 'employee-worklog-row bg-white dark:bg-gray-800 rounded-lg p-4 border-2 border-blue-400 dark:border-blue-600';
+                card.id = `worklog-employee-${index}`;
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <h4 class="font-bold text-blue-600 dark:text-blue-400">
+                            ✏️ 編輯模式：${log.userName}
+                        </h4>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                👤 員工姓名
+                            </label>
+                            <input type="text" 
+                                   value="${log.userName}" 
+                                   disabled 
+                                   class="employee-name w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 dark:text-white">
+                            <input type="hidden" class="employee-id" value="${log.userId}">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                💬 備註
+                            </label>
+                            <input type="text" 
+                                   class="note-input w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+                                   value="${log.note || ''}"
+                                   placeholder="其他補充說明（選填）">
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+                
+                if (emptyState) emptyState.style.display = 'none';
+                if (submitBtn) {
+                    submitBtn.style.display = 'block';
+                    submitBtn.textContent = '💾 更新工作日誌';
+                    submitBtn.onclick = () => updateWorklogBatch(logId);
+                }
+            }
+            
+            // 滾動到表單
+            const formContainer = document.querySelector('#worklog-tab-content');
+            if (formContainer) {
+                formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            
+            showNotification('✏️ 進入編輯模式，修改後請點擊「更新工作日誌」', 'info');
         }
         
     } catch (error) {
-        console.error('更新工作日誌失敗:', error);
-        showNotification(t('NETWORK_ERROR') || '網路錯誤', 'error');
+        console.error('載入工作日誌失敗:', error);
+        showNotification('載入失敗', 'error');
+    }
+}
+
+/**
+ * ✅ 更新工作日誌（批量表單模式）
+ */
+async function updateWorklogBatch(logId) {
+    console.log('═══════════════════════════════════════');
+    console.log('📝 更新工作日誌:', logId);
+    console.log('═══════════════════════════════════════');
+    
+    // 取得共用資訊
+    const commonDate = document.getElementById('worklog-common-date')?.value;
+    const commonWeather = document.getElementById('worklog-common-weather')?.value;
+    const commonLocation = document.getElementById('worklog-common-location')?.value;
+    const commonTimeSlot = document.getElementById('worklog-common-timeslot')?.value;
+    const commonHours = document.getElementById('worklog-common-hours')?.value;
+    const commonContent = document.getElementById('worklog-common-content')?.value;
+    
+    // 驗證
+    if (!commonDate || !commonWeather || !commonLocation) {
+        showNotification('❌ 請填寫完整的共用資訊（日期、天氣、地點）', 'error');
+        return;
+    }
+    
+    if (!commonTimeSlot) {
+        showNotification('❌ 請填寫工作時段', 'error');
+        return;
+    }
+    
+    if (!commonHours) {
+        showNotification('❌ 請填寫工作時數', 'error');
+        return;
+    }
+    
+    if (!commonContent || commonContent.trim().length < 2) {
+        showNotification('❌ 請填寫工作內容（至少 2 個字）', 'error');
+        return;
+    }
+    
+    // 取得備註
+    const noteInput = document.querySelector('.note-input');
+    const note = noteInput?.value || '';
+    
+    const submitBtn = document.getElementById('batch-submit-worklog-btn');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = '🔄 更新中...';
+    }
+    
+    try {
+        // ⭐ 呼叫更新 API
+        const params = new URLSearchParams({
+            id: logId,
+            date: commonDate,
+            weather: commonWeather,
+            location: commonLocation,
+            timeSlot: commonTimeSlot,
+            hours: parseFloat(commonHours),
+            content: commonContent.trim(),
+            note: note.trim()
+        });
+        
+        const result = await callApifetch(`updateWorklog&${params.toString()}`);
+        
+        console.log('📤 API 回應:', result);
+        
+        if (result.ok) {
+            showNotification('✅ 工作日誌更新成功！', 'success');
+            
+            // 清空表單
+            const container = document.getElementById('worklog-employees-container');
+            const emptyState = document.getElementById('worklog-empty-state');
+            
+            if (container) container.innerHTML = '';
+            if (emptyState) emptyState.style.display = 'block';
+            if (submitBtn) {
+                submitBtn.style.display = 'none';
+                submitBtn.textContent = '📤 批量提交';
+                submitBtn.onclick = batchSubmitWorklogs;
+            }
+            
+            // 清空共用資訊
+            document.getElementById('worklog-common-date').value = '';
+            document.getElementById('worklog-common-weather').value = '';
+            document.getElementById('worklog-common-location').value = '';
+            document.getElementById('worklog-common-timeslot').value = '';
+            document.getElementById('worklog-common-hours').value = '';
+            document.getElementById('worklog-common-content').value = '';
+            
+            // 重新載入記錄
+            await loadWorklogRecords();
+            
+        } else {
+            showNotification(`❌ 更新失敗：${result.msg}`, 'error');
+        }
+        
+    } catch (error) {
+        console.error('❌ 更新異常:', error);
+        showNotification('❌ 更新失敗', 'error');
         
     } finally {
-        generalButtonState(submitBtn, 'idle');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '💾 更新工作日誌';
+        }
     }
 }
 
