@@ -341,9 +341,6 @@ function renderWorklogRecords(worklogs) {
     });
 }
 
-/**
- * ✅ 編輯工作日誌（支援新欄位：天氣、地點、工作時段等）
- */
 async function editWorklog(logId) {
     try {
         console.log('📝 開始編輯工作日誌:', logId);
@@ -355,6 +352,36 @@ async function editWorklog(logId) {
             
             console.log('✅ 載入工作日誌資料:', log);
             
+            // ⭐⭐⭐ 修正：處理日期格式
+            let formattedDate = log.date;
+            if (log.date) {
+                try {
+                    // 如果是 ISO 格式（包含 T），轉換成 yyyy-MM-dd
+                    if (log.date.includes('T')) {
+                        const dateObj = new Date(log.date);
+                        const year = dateObj.getFullYear();
+                        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                        const day = String(dateObj.getDate()).padStart(2, '0');
+                        formattedDate = `${year}-${month}-${day}`;
+                    } else if (/^\d{4}-\d{2}-\d{2}$/.test(log.date)) {
+                        // 如果已經是 yyyy-MM-dd 格式，直接使用
+                        formattedDate = log.date;
+                    } else {
+                        // 其他格式，嘗試解析
+                        const dateObj = new Date(log.date);
+                        const year = dateObj.getFullYear();
+                        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                        const day = String(dateObj.getDate()).padStart(2, '0');
+                        formattedDate = `${year}-${month}-${day}`;
+                    }
+                } catch (e) {
+                    console.error('日期格式轉換失敗:', e);
+                    formattedDate = log.date;
+                }
+            }
+            
+            console.log('📅 格式化後的日期:', formattedDate);
+            
             // ⭐ 填入批量表單的共用欄位
             const dateInput = document.getElementById('worklog-common-date');
             const weatherInput = document.getElementById('worklog-common-weather');
@@ -363,7 +390,7 @@ async function editWorklog(logId) {
             const hoursInput = document.getElementById('worklog-common-hours');
             const contentInput = document.getElementById('worklog-common-content');
             
-            if (dateInput) dateInput.value = log.date || '';
+            if (dateInput) dateInput.value = formattedDate;  // ⭐ 使用格式化後的日期
             if (weatherInput) weatherInput.value = log.weather || '';
             if (locationInput) locationInput.value = log.location || '';
             if (timeslotInput) timeslotInput.value = log.timeSlot || '';
