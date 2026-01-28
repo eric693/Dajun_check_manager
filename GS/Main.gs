@@ -119,6 +119,10 @@ function doGet(e) {
         return respond1(handleGetAllWorklogReport(e.parameter));
       case "getWorklogMonthlyStats":
         return respond1(handleGetWorklogMonthlyStats(e.parameter));
+      case "updateWorklog":
+        return respond1(handleUpdateWorklog(e.parameter));
+      case "getWorklogsByBatchId":
+        return respond1(handleGetWorklogsByBatchId(e.parameter));
       // ==================== 排班系統 ====================
       case "addShift":
         return respond1(handleAddShift(e.parameter));

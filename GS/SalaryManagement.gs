@@ -696,57 +696,6 @@ function saveMonthlySalary(salaryData) {
     return { success: false, message: error.toString() };
   }
 }
-
-function testEricEmployeeType() {
-  const employeeId = 'U1771fd65da16e2f2000a3c3805fbe256'; // Eric
-  const yearMonth = '2026-01';
-  
-  // 1. 檢查員工設定中的員工類型
-  const config = getEmployeeSalaryTW(employeeId);
-  Logger.log('📋 員工設定:');
-  Logger.log(`   員工類型: "${config.data['員工類型']}"`);
-  
-  // 2. 計算薪資
-  const result = calculateMonthlySalary(employeeId, yearMonth);
-  
-  if (result.success) {
-    Logger.log('💰 計算結果:');
-    Logger.log(`   employeeType: "${result.data.employeeType}"`);
-    Logger.log(`   salaryType: "${result.data.salaryType}"`);
-    Logger.log(`   totalWorkHours: ${result.data.totalWorkHours}`);
-    
-    // 3. 檢查是否使用工作日誌
-    const isTeamMember = result.data.employeeType === '組員' || result.data.employeeType === '組長';
-    Logger.log(`   isTeamMember: ${isTeamMember}`);
-    Logger.log(`   預期工時來源: ${isTeamMember ? '工作日誌' : '打卡記錄'}`);
-  } else {
-    Logger.log('❌ 計算失敗:', result.message);
-  }
-}
-
-function debugEmployeeType() {
-  const employeeId = 'U1771fd65da16e2f2000a3c3805fbe256'; // Eric 的 ID
-  const yearMonth = '2026-01';
-  
-  // 1. 檢查員工設定
-  const config = getEmployeeSalaryTW(employeeId);
-  Logger.log('📋 員工設定:');
-  Logger.log(`   員工類型: "${config.data['員工類型']}"`);
-  
-  // 2. 檢查薪資記錄
-  const salary = getMySalary(employeeId, yearMonth);
-  Logger.log('💰 薪資記錄:');
-  Logger.log(`   員工類型: "${salary.data['員工類型']}"`);
-  
-  // 3. 重新計算
-  const calculated = calculateMonthlySalary(employeeId, yearMonth);
-  Logger.log('🧮 計算結果:');
-  Logger.log(`   員工類型: "${calculated.data.employeeType}"`);
-  
-  // 4. 儲存
-  const saved = saveMonthlySalary(calculated.data);
-  Logger.log('💾 儲存結果: ' + saved.success);
-}
 /**
  * ✅ API 入口：儲存月薪資記錄（接收 query string 參數）
  */
@@ -1388,28 +1337,6 @@ function calculateHourlySalary(employeeId, yearMonth) {
     return { success: false, message: error.toString() };
   }
 }
-
-/**
- * 🧪 測試時薪計算（使用實際打卡資料）
- */
-function testCalculateHourlySalary() {
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('🧪 測試時薪計算');
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('');
-  
-  const employeeId = 'U68e0ca9d516e63ed15bf9387fad174ac';
-  const yearMonth = '2025-12';
-  
-  const result = calculateMonthlySalary(employeeId, yearMonth);
-  
-  Logger.log('');
-  Logger.log('📊 計算結果:');
-  Logger.log(JSON.stringify(result, null, 2));
-  Logger.log('');
-  Logger.log('═══════════════════════════════════════');
-}
-
 /**
  * ✅ 取得員工該月份的打卡記錄並計算工時（修正版）
  * 
@@ -1620,37 +1547,6 @@ function getEmployeeMonthlyOvertimeAPI() {
     Logger.log('❌ getEmployeeMonthlyOvertimeAPI 錯誤: ' + error);
     return jsonResponse({ ok: false, msg: error.toString(), code: 'ERROR' });
   }
-}
-
-/**
- * 🧪 測試打卡工時計算
- */
-function testGetEmployeeMonthlyAttendance() {
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('🧪 測試 getEmployeeMonthlyAttendance');
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('');
-  
-  const employeeId = 'U68e0ca9d516e63ed15bf9387fad174ac'; // CSF
-  const yearMonth = '2025-12';
-  
-  const records = getEmployeeMonthlyAttendanceInternal(employeeId, yearMonth);
-  
-  Logger.log('');
-  Logger.log('📊 測試結果：找到 ' + records.length + ' 筆記錄');
-  Logger.log('');
-  
-  let totalHours = 0;
-  
-  records.forEach(record => {
-    Logger.log(`   ${record.date}: ${record.punchIn || '--'} ~ ${record.punchOut || '--'}, 工時: ${record.workHours.toFixed(2)}h`);
-    totalHours += record.workHours;
-  });
-  
-  Logger.log('');
-  Logger.log('✅ 總工時: ' + totalHours.toFixed(2) + ' 小時');
-  Logger.log('');
-  Logger.log('═══════════════════════════════════════');
 }
 
 /**
@@ -2264,80 +2160,6 @@ function getBankName(code) {
   
   return banks[bankCode] || `未知銀行 (${bankCode})`;
 }
-
-console.log('✅ 薪資匯出功能已載入（管理員專用）');
-
-
-function testExportSalaryDirect() {
-  Logger.log('🧪 开始测试汇出功能');
-  
-  // 模拟请求参数
-  const mockParams = {
-    action: 'exportAllSalaryExcel',
-    token: '48c4c025-f8fa-4528-9429-910b507c6774',  // ⚠️ 替换成真实的 token
-    yearMonth: '2025-12',
-    callback: 'callback'
-  };
-  
-  // 模拟 doGet 请求
-  const mockEvent = {
-    parameter: mockParams
-  };
-  
-  const result = doGet(mockEvent);
-  Logger.log('📤 测试结果:');
-  Logger.log(result.getContent());
-}
-
-function testCheckSalaryData() {
-  Logger.log('🔍 檢查薪資記錄資料結構');
-  
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const salarySheet = ss.getSheetByName('月薪資記錄');
-  
-  if (!salarySheet) {
-    Logger.log('❌ 找不到「月薪資記錄」工作表');
-    return;
-  }
-  
-  const lastRow = salarySheet.getLastRow();
-  Logger.log(`📊 總行數: ${lastRow}`);
-  
-  if (lastRow <= 1) {
-    Logger.log('⚠️ 工作表中沒有資料');
-    return;
-  }
-  
-  // 取得標題列
-  const headers = salarySheet.getRange(1, 1, 1, salarySheet.getLastColumn()).getValues()[0];
-  Logger.log(`📋 欄位標題: ${headers.join(', ')}`);
-  
-  // 取得前 5 筆資料
-  const sampleData = salarySheet.getRange(2, 1, Math.min(5, lastRow - 1), salarySheet.getLastColumn()).getValues();
-  
-  Logger.log('\n📊 前 5 筆資料:');
-  sampleData.forEach((row, index) => {
-    Logger.log(`\n第 ${index + 1} 筆:`);
-    Logger.log(`   員工ID (col 2): ${row[1]}`);
-    Logger.log(`   員工姓名 (col 3): ${row[2]}`);
-    Logger.log(`   年月 (col 4): ${row[3]} (型別: ${typeof row[3]})`);
-    
-    if (row[3] instanceof Date) {
-      Logger.log(`   年月 (格式化): ${Utilities.formatDate(row[3], 'Asia/Taipei', 'yyyy-MM')}`);
-    }
-  });
-}
-
-function testEricSalary() {
-  const employeeId = 'Ud3b574f260f5a777337158ccd4ff0ba2'; // Eric 的 ID
-  const yearMonth = '2025-12';
-  
-  const result = calculateMonthlySalary(employeeId, yearMonth);
-  
-  Logger.log('📊 計算結果:');
-  Logger.log(JSON.stringify(result, null, 2));
-}
-
 /**
  * ✅ 計算員工該月份的總工時（不含扣除項目，僅計算淨工作時數）
  * 
@@ -2441,122 +2263,6 @@ function getEmployeeWorkHoursAPI() {
   }
 }
 
-
-/**
- * 🧪 測試取得 Eric 的工作時數（後端驗證）
- */
-function testEricWorkHours() {
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('🧪 測試 Eric 的工作時數');
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('');
-  
-  const employeeId = 'Ud3b574f260f5a777337158ccd4ff0ba2'; // Eric
-  const yearMonth = '2025-12';
-  
-  Logger.log(`📋 員工ID: ${employeeId}`);
-  Logger.log(`📅 查詢月份: ${yearMonth}`);
-  Logger.log('');
-  
-  // ==================== 方法 1：直接呼叫內部函數 ====================
-  Logger.log('📊 方法 1：呼叫 getEmployeeMonthlyAttendanceInternal');
-  Logger.log('─────────────────────────────────────');
-  
-  const attendanceRecords = getEmployeeMonthlyAttendanceInternal(employeeId, yearMonth);
-  
-  Logger.log(`✅ 找到 ${attendanceRecords.length} 筆打卡記錄`);
-  Logger.log('');
-  
-  // 計算總工時
-  let totalWorkHours = 0;
-  
-  Logger.log('📋 每日工時明細:');
-  attendanceRecords.forEach(record => {
-    if (record.workHours > 0) {
-      totalWorkHours += record.workHours;
-      Logger.log(`   ${record.date}: ${record.punchIn || '--'} ~ ${record.punchOut || '--'} = ${record.workHours.toFixed(1)}h`);
-    } else {
-      Logger.log(`   ${record.date}: ${record.punchIn || '--'} ~ ${record.punchOut || '--'} = 打卡不完整`);
-    }
-  });
-  
-  Logger.log('');
-  Logger.log('─────────────────────────────────────');
-  Logger.log(`✅ 總工作時數: ${totalWorkHours.toFixed(1)} 小時`);
-  Logger.log(`✅ 出勤天數: ${attendanceRecords.filter(r => r.workHours > 0).length} 天`);
-  Logger.log('─────────────────────────────────────');
-  Logger.log('');
-  
-  // ==================== 方法 2：呼叫 calculateEmployeeWorkHours ====================
-  Logger.log('📊 方法 2：呼叫 calculateEmployeeWorkHours');
-  Logger.log('─────────────────────────────────────');
-  
-  const result = calculateEmployeeWorkHours(employeeId, yearMonth);
-  
-  if (result.success) {
-    Logger.log(`✅ 成功取得工作時數: ${result.totalWorkHours.toFixed(1)}h`);
-  } else {
-    Logger.log(`❌ 失敗: ${result.message}`);
-  }
-  
-  Logger.log('');
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('🎯 測試完成');
-  Logger.log('═══════════════════════════════════════');
-  
-  // ==================== 方法 3：檢查薪資計算結果 ====================
-  Logger.log('');
-  Logger.log('📊 方法 3：檢查薪資計算結果中的工作時數');
-  Logger.log('─────────────────────────────────────');
-  
-  const salaryResult = calculateMonthlySalary(employeeId, yearMonth);
-  
-  if (salaryResult.success) {
-    const data = salaryResult.data;
-    Logger.log(`✅ 薪資類型: ${data.salaryType}`);
-    Logger.log(`✅ 時薪: $${data.hourlyRate || 0}`);
-    Logger.log(`✅ 工作時數: ${data.totalWorkHours || 0}h`);
-    Logger.log(`✅ 基本薪資: $${data.baseSalary}`);
-    Logger.log(`✅ 加班時數: ${data.totalOvertimeHours || 0}h`);
-  } else {
-    Logger.log(`❌ 計算失敗: ${salaryResult.message}`);
-  }
-  
-  Logger.log('');
-  Logger.log('═══════════════════════════════════════');
-}
-
-
-function testSalaryTypePreservation() {
-  Logger.log('🧪 測試薪資類型保存');
-  
-  // 測試時薪員工
-  const hourlyEmployeeId = 'U68e0ca9d516e63ed15bf9387fad174ac'; // CSF
-  const monthlyEmployeeId = 'Ud3b574f260f5a777337158ccd4ff0ba2'; // Eric
-  const yearMonth = '2025-12';
-  
-  Logger.log('\n📊 測試時薪員工:');
-  const hourlyResult = calculateMonthlySalary(hourlyEmployeeId, yearMonth);
-  if (hourlyResult.success) {
-    Logger.log(`   薪資類型: ${hourlyResult.data.salaryType}`);
-    Logger.log(`   時薪: ${hourlyResult.data.hourlyRate}`);
-    Logger.log(`   基本薪資: ${hourlyResult.data.baseSalary}`);
-    saveMonthlySalary(hourlyResult.data);
-  }
-  
-  Logger.log('\n📊 測試月薪員工:');
-  const monthlyResult = calculateMonthlySalary(monthlyEmployeeId, yearMonth);
-  if (monthlyResult.success) {
-    Logger.log(`   薪資類型: ${monthlyResult.data.salaryType}`);
-    Logger.log(`   時薪: ${monthlyResult.data.hourlyRate}`);
-    Logger.log(`   基本薪資: ${monthlyResult.data.baseSalary}`);
-    saveMonthlySalary(monthlyResult.data);
-  }
-  
-  Logger.log('\n✅ 測試完成，請檢查「月薪資記錄」工作表');
-}
-
-
 /**
  * ✅ 從「工作日誌」取得該月份的總工作時數
  * 
@@ -2636,91 +2342,6 @@ function getWorkHoursFromWorklog(employeeId, yearMonth) {
     return 0;
   }
 }
-
-/**
- * 🧪 測試工時來源修正
- */
-function testWorklogWorkHours() {
-  Logger.log('🧪 測試工作日誌工時計算');
-  Logger.log('');
-  
-  const testCases = [
-    { id: 'U1771fd65da16e2f2000a3c3805fbe256', type: '組員', yearMonth: '2026-01' }
-  ];
-  
-  testCases.forEach(test => {
-    Logger.log('═══════════════════════════════════════');
-    Logger.log(`測試：${test.type} (${test.id})`);
-    Logger.log('═══════════════════════════════════════');
-    
-    const workHours = getWorkHoursFromWorklog(test.id, test.yearMonth);
-    
-    Logger.log('');
-    Logger.log(`✅ 結果：${workHours}h`);
-    Logger.log('');
-  });
-}
-
-function fixEricEmployeeType() {
-     const employeeId = 'U1771fd65da16e2f2000a3c3805fbe256';
-     const yearMonth = '2026-01';
-     
-     // 重新計算薪資
-     const result = calculateMonthlySalary(employeeId, yearMonth);
-     
-     if (result.success) {
-       // 儲存
-       saveMonthlySalary(result.data);
-       Logger.log('✅ 已修正員工類型');
-     }
-}
-
-function fixEricEmployeeType() {
-  Logger.log('🔧 開始修正 Eric 的員工類型');
-  
-  // 1. 先檢查員工設定
-  const employeeId = 'U1771fd65da16e2f2000a3c3805fbe256';
-  const config = getEmployeeSalaryTW(employeeId);
-  
-  Logger.log('📋 當前員工設定:');
-  Logger.log('   員工類型: ' + config.data['員工類型']);
-  
-  // 2. 如果是「正職」，需要手動改為「組員」
-  if (config.data['員工類型'] !== '組員') {
-    Logger.log('⚠️ 員工類型不是「組員」，請手動修改「員工薪資設定」工作表的 D 欄');
-    Logger.log('   應該改為：組員');
-    return;
-  }
-  
-  // 3. 重新計算 2026-01 的薪資
-  const yearMonth = '2026-01';
-  Logger.log(`\n🔄 重新計算 ${yearMonth} 薪資`);
-  
-  const result = calculateMonthlySalary(employeeId, yearMonth);
-  
-  if (result.success) {
-    Logger.log('✅ 計算成功:');
-    Logger.log('   員工類型: ' + result.data.employeeType);
-    Logger.log('   薪資類型: ' + result.data.salaryType);
-    Logger.log('   工作時數: ' + result.data.totalWorkHours);
-    
-    // 4. 儲存
-    saveMonthlySalary(result.data);
-    Logger.log('✅ 已重新儲存薪資記錄');
-  } else {
-    Logger.log('❌ 計算失敗: ' + result.message);
-  }
-}
-
-function testMyWorkHours() {
-  const employeeId = 'U1771fd65da16e2f2000a3c3805fbe256'; // 你的 ID
-  const yearMonth = '2026-01';
-  
-  const workHours = getWorkHoursFromWorklog(employeeId, yearMonth);
-  
-  Logger.log(`✅ ${yearMonth} 總工時: ${workHours}h`);
-}
-
 
 /**
  * ✅ 主函數：一鍵生成兩個薪資管理表格
@@ -3241,40 +2862,6 @@ function addMonthlySalaryConditionalFormatting(sheet) {
   sheet.setConditionalFormatRules([paidRule, calculatedRule, pendingRule]);
   
   Logger.log('   ✅ 已新增條件格式規則');
-}
-
-/**
- * ✅ 測試函數：檢查表格結構
- */
-function testSheetStructure() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  
-  Logger.log('🔍 檢查表格結構...');
-  Logger.log('');
-  
-  // 檢查「員工薪資設定」
-  const configSheet = ss.getSheetByName('員工薪資設定');
-  if (configSheet) {
-    const headers1 = configSheet.getRange(1, 1, 1, configSheet.getLastColumn()).getValues()[0];
-    Logger.log('✅ 員工薪資設定:');
-    Logger.log(`   欄位數: ${headers1.length}`);
-    Logger.log(`   欄位: ${headers1.join(', ')}`);
-  } else {
-    Logger.log('❌ 找不到「員工薪資設定」表格');
-  }
-  
-  Logger.log('');
-  
-  // 檢查「月薪資記錄」
-  const salarySheet = ss.getSheetByName('月薪資記錄');
-  if (salarySheet) {
-    const headers2 = salarySheet.getRange(1, 1, 1, salarySheet.getLastColumn()).getValues()[0];
-    Logger.log('✅ 月薪資記錄:');
-    Logger.log(`   欄位數: ${headers2.length}`);
-    Logger.log(`   欄位: ${headers2.join(', ')}`);
-  } else {
-    Logger.log('❌ 找不到「月薪資記錄」表格');
-  }
 }
 
 /**

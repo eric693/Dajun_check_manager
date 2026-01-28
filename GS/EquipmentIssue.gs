@@ -4,11 +4,11 @@
 const SHEET_EQUIPMENT_ISSUE = '入職裝備領用表';
 
 const EQUIPMENT_LIST = [
-  { name: '✦安全帽', quantity: 1, unit: '個', category: 'required', unitPrice: 200 },
-  { name: '✦直二格釘袋', quantity: 1, unit: '個', category: 'required', unitPrice: 600 },
-  { name: '✦S腰帶', quantity: 1, unit: '條', category: 'required', unitPrice: 200 },
-  { name: '✦工具收納袋', quantity: 1, unit: '個', category: 'required', unitPrice: 500 },
-  { name: '✦捲尺快扣', quantity: 1, unit: '個', category: 'required', unitPrice: 500 },
+  { name: '✧安全帽', quantity: 1, unit: '個', category: 'required', unitPrice: 200 },
+  { name: '✧直二格釘袋', quantity: 1, unit: '個', category: 'required', unitPrice: 600 },
+  { name: '✧S腰帶', quantity: 1, unit: '條', category: 'required', unitPrice: 200 },
+  { name: '✧工具收納袋', quantity: 1, unit: '個', category: 'required', unitPrice: 500 },
+  { name: '✧捲尺快扣', quantity: 1, unit: '個', category: 'required', unitPrice: 500 },
 
   { name: '鐵鎚', quantity: 1, unit: '個', category: 'normal', unitPrice: 750 },
   { name: '槌架', quantity: 1, unit: '個', category: 'normal', unitPrice: 200 },
@@ -16,11 +16,11 @@ const EQUIPMENT_LIST = [
   { name: '鋼絲鉗', quantity: 1, unit: '個', category: 'normal', unitPrice: 450 },
   { name: '單口鉗套', quantity: 1, unit: '個', category: 'normal', unitPrice: 400 },
 
-  { name: '◆捲尺', quantity: 1, unit: '個', category: 'company', unitPrice: 0 },
-  { name: '◆制服', quantity: 2, unit: '件', category: 'company', unitPrice: 0 },
-  { name: '◆削筆器', quantity: 1, unit: '個', category: 'company', unitPrice: 0 },
-  { name: '◆鉛筆', quantity: 1, unit: '盒', category: 'company', unitPrice: 0 },
-  { name: '◆螺絲起子(小)', quantity: 1, unit: '把', category: 'company', unitPrice: 0 }
+  { name: '✦捲尺', quantity: 1, unit: '個', category: 'company', unitPrice: 0 },
+  { name: '✦制服', quantity: 2, unit: '件', category: 'company', unitPrice: 0 },
+  { name: '✦削筆器', quantity: 1, unit: '個', category: 'company', unitPrice: 0 },
+  { name: '✦鉛筆', quantity: 1, unit: '盒', category: 'company', unitPrice: 0 },
+  { name: '✦螺絲起子(小)', quantity: 1, unit: '把', category: 'company', unitPrice: 0 }
 ];
 
 function calcTotalAmount(receivedItems) {
@@ -52,7 +52,10 @@ function handleGetEquipmentList(params) {
     return {
       ok: true,
       data: EQUIPMENT_LIST,
-      note: '◆為公司提供，無須購買，毀損可與倉管換領'
+      notes: {
+        companyProvided: '✦ 為公司提供，無須購買，毀損可與倉管換領',
+        selfPrepared: '✧ 為自行準備，請在正式上工前備齊'
+      }
     };
     
   } catch (error) {
@@ -308,34 +311,4 @@ function handleGetAllEquipmentIssues(params) {
     Logger.log('❌ 錯誤: ' + error);
     return { ok: false, msg: error.message };
   }
-}
-
-/**
- * 🧪 測試函數
- */
-function testEquipmentIssueAPI() {
-  Logger.log('===== 測試裝備領用表 API =====');
-  
-  // ⚠️ 替換成你的真實 token
-  const testToken = 'eaf9bca2-63e8-4582-abd3-9951be95c597';
-  
-  // 測試 1: 取得裝備清單
-  const listResult = handleGetEquipmentList({ token: testToken });
-  Logger.log('1. 裝備清單: ' + JSON.stringify(listResult));
-  
-  // 測試 2: 取得領用記錄
-  const recordResult = handleGetEmployeeEquipmentIssue({ token: testToken });
-  Logger.log('2. 領用記錄: ' + JSON.stringify(recordResult));
-  
-  // 測試 3: 儲存領用記錄
-  const saveResult = handleSaveEquipmentIssue({
-    token: testToken,
-    receivedItems: encodeURIComponent(JSON.stringify({
-      '✦安全帽': true,
-      '✦直二格釘袋': true,
-      '鐵鎚': true
-    })),
-    note: '測試領用'
-  });
-  Logger.log('3. 儲存結果: ' + JSON.stringify(saveResult));
 }

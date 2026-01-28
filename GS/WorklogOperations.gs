@@ -18,24 +18,25 @@ function getWorklogSheet() {
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_WORKLOG);
     
-    // ⭐ 更新標題列（從 12 欄變成 16 欄）
+    // ⭐ 更新標題列（從 16 欄變成 17 欄）
     const headers = [
       '日誌ID',        // A (0)
-      '員工ID',        // B (1)
-      '員工姓名',      // C (2)
-      '部門',          // D (3)
-      '工作日期',      // E (4)
-      '天氣',          // F (5) ⭐ 新增
-      '地點',          // G (6) ⭐ 新增
-      '工作時段',      // H (7) ⭐ 新增
-      '工作時數',      // I (8) - 原 F
-      '工作內容',      // J (9) - 原 G
-      '備註',          // K (10) ⭐ 新增
-      '狀態',          // L (11) - 原 H
-      '提交時間',      // M (12) - 原 I
-      '審核人',        // N (13) - 原 J
-      '審核時間',      // O (14) - 原 K
-      '審核意見'       // P (15) - 原 L
+      '批次ID',        // B (1) ⭐ 新增
+      '員工ID',        // C (2) - 原 B
+      '員工姓名',      // D (3) - 原 C
+      '部門',          // E (4) - 原 D
+      '工作日期',      // F (5) - 原 E
+      '天氣',          // G (6) - 原 F
+      '地點',          // H (7) - 原 G
+      '工作時段',      // I (8) - 原 H
+      '工作時數',      // J (9) - 原 I
+      '工作內容',      // K (10) - 原 J
+      '備註',          // L (11) - 原 K
+      '狀態',          // M (12) - 原 L
+      '提交時間',      // N (13) - 原 M
+      '審核人',        // O (14) - 原 N
+      '審核時間',      // P (15) - 原 O
+      '審核意見'       // Q (16) - 原 P
     ];
     
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
@@ -57,123 +58,6 @@ function getWorklogSheet() {
 
 // ==================== 新增工作日誌 ====================
 
-function submitWorklog(userId, userName, department, date, hours, content, 
-                       weather, location, timeSlot, note) {
-  try {
-    Logger.log('═══════════════════════════════════════');
-    Logger.log('📝 開始提交工作日誌（完整版）');
-    Logger.log('   員工: ' + userName);
-    Logger.log('   日期: ' + date);
-    Logger.log('   天氣: ' + weather);
-    Logger.log('   地點: ' + location);
-    Logger.log('   工作時段: ' + timeSlot);
-    Logger.log('   時數: ' + hours);
-    Logger.log('   內容長度: ' + (content ? content.length : 0));
-    Logger.log('   備註: ' + (note ? '有' : '無'));
-    Logger.log('═══════════════════════════════════════');
-    
-    // ⭐⭐⭐ 修正：使用 .trim() 檢查，並提供更詳細的錯誤訊息
-    if (!userId || typeof userId !== 'string' || !userId.trim()) {
-      Logger.log('❌ 缺少員工 ID');
-      return { success: false, message: '缺少員工 ID' };
-    }
-    
-    if (!date || typeof date !== 'string' || !date.trim()) {
-      Logger.log('❌ 缺少工作日期');
-      return { success: false, message: '缺少工作日期' };
-    }
-    
-    if (!weather || typeof weather !== 'string' || !weather.trim()) {
-      Logger.log('❌ 缺少天氣資訊');
-      return { success: false, message: '缺少天氣資訊' };
-    }
-    
-    if (!location || typeof location !== 'string' || !location.trim()) {
-      Logger.log('❌ 缺少地點資訊');
-      return { success: false, message: '缺少地點資訊' };
-    }
-    
-    if (!hours) {
-      Logger.log('❌ 缺少工作時數');
-      return { success: false, message: '缺少工作時數' };
-    }
-    
-    if (!content || typeof content !== 'string' || !content.trim()) {
-      Logger.log('❌ 缺少工作內容');
-      return { success: false, message: '缺少工作內容' };
-    }
-    
-    // 驗證工作時數
-    const hoursNum = parseFloat(hours);
-    if (isNaN(hoursNum) || hoursNum <= 0 || hoursNum > 24) {
-      Logger.log('❌ 工作時數格式錯誤: ' + hours);
-      return { success: false, message: '工作時數必須在 0.5 ~ 24 小時之間' };
-    }
-    
-    // 驗證工作內容長度
-    if (content.trim().length < 10) {
-      Logger.log('❌ 工作內容太短: ' + content.trim().length + ' 字');
-      return { success: false, message: '工作內容至少需要 10 個字' };
-    }
-    
-    // 檢查是否已有相同日期的待審核日誌
-    const sheet = getWorklogSheet();
-    const data = sheet.getDataRange().getValues();
-    
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][1] === userId && 
-          data[i][4] === date && 
-          data[i][11] === WORKLOG_STATUS.PENDING) {
-        Logger.log('❌ 該日期已有待審核的工作日誌');
-        return { success: false, message: '該日期已有待審核的工作日誌，請先撤回或等待審核' };
-      }
-    }
-    
-    // 生成日誌ID
-    const worklogId = 'WL_' + Date.now();
-    const submittedAt = new Date().toISOString();
-    
-    // 新增工作日誌（16 欄）
-    const newRow = [
-      worklogId,                    // A: 日誌ID
-      userId,                       // B: 員工ID
-      userName,                     // C: 員工姓名
-      department,                   // D: 部門
-      date,                         // E: 工作日期
-      weather.trim(),               // F: 天氣
-      location.trim(),              // G: 地點
-      timeSlot || '',           // H: 工作時段
-      hoursNum,                     // I: 工作時數
-      content.trim(),               // J: 工作內容
-      note ? note.trim() : '',      // K: 備註
-      WORKLOG_STATUS.PENDING,       // L: 狀態
-      submittedAt,                  // M: 提交時間
-      '',                           // N: 審核人
-      '',                           // O: 審核時間
-      ''                            // P: 審核意見
-    ];
-    
-    sheet.appendRow(newRow);
-    
-    Logger.log('✅ 工作日誌提交成功');
-    Logger.log('   日誌ID: ' + worklogId);
-    Logger.log('═══════════════════════════════════════');
-    
-    return {
-      success: true,
-      message: '工作日誌提交成功',
-      worklogId: worklogId
-    };
-    
-  } catch (error) {
-    Logger.log('❌ submitWorklog 錯誤: ' + error);
-    Logger.log('   錯誤堆疊: ' + error.stack);
-    return { success: false, message: error.message };
-  }
-}
-
-// ==================== 查詢工作日誌 ====================
-
 function getWorklogs(userId, limit = 30) {
   try {
     Logger.log('📋 查詢工作日誌: ' + userId);
@@ -183,24 +67,25 @@ function getWorklogs(userId, limit = 30) {
     const worklogs = [];
     
     for (let i = 1; i < data.length; i++) {
-      if (data[i][1] === userId) {
+      if (data[i][2] === userId) {  // ⭐ 原 [1] → [2]
         worklogs.push({
           id: data[i][0],
-          userId: data[i][1],
-          userName: data[i][2],
-          department: data[i][3],
-          date: data[i][4],
-          weather: data[i][5],        // ⭐ 新增
-          location: data[i][6],       // ⭐ 新增
-          timeSlot: data[i][7],    // ⭐ 新增
-          hours: data[i][8],          // 原 [5] → [8]
-          content: data[i][9],        // 原 [6] → [9]
-          note: data[i][10],          // ⭐ 新增
-          status: data[i][11],        // 原 [7] → [11]
-          submittedAt: data[i][12],   // 原 [8] → [12]
-          reviewedBy: data[i][13],    // 原 [9] → [13]
-          reviewedAt: data[i][14],    // 原 [10] → [14]
-          reviewComment: data[i][15]  // 原 [11] → [15]
+          batchId: data[i][1],        // ⭐ 新增
+          userId: data[i][2],         // 原 [1] → [2]
+          userName: data[i][3],       // 原 [2] → [3]
+          department: data[i][4],     // 原 [3] → [4]
+          date: data[i][5],           // 原 [4] → [5]
+          weather: data[i][6],        // 原 [5] → [6]
+          location: data[i][7],       // 原 [6] → [7]
+          timeSlot: data[i][8],       // 原 [7] → [8]
+          hours: data[i][9],          // 原 [8] → [9]
+          content: data[i][10],       // 原 [9] → [10]
+          note: data[i][11],          // 原 [10] → [11]
+          status: data[i][12],        // 原 [11] → [12]
+          submittedAt: data[i][13],   // 原 [12] → [13]
+          reviewedBy: data[i][14],    // 原 [13] → [14]
+          reviewedAt: data[i][15],    // 原 [14] → [15]
+          reviewComment: data[i][16]  // 原 [15] → [16]
         });
       }
     }
@@ -234,21 +119,22 @@ function getWorklogDetail(worklogId) {
           success: true,
           worklog: {
             id: data[i][0],
-            userId: data[i][1],
-            userName: data[i][2],
-            department: data[i][3],
-            date: data[i][4],
-            weather: data[i][5],        // ⭐ 新增
-            location: data[i][6],       // ⭐ 新增
-            timeSlot: data[i][7],    // ⭐ 新增
-            hours: data[i][8],          // 原 [5] → [8]
-            content: data[i][9],        // 原 [6] → [9]
-            note: data[i][10],          // ⭐ 新增
-            status: data[i][11],        // 原 [7] → [11]
-            submittedAt: data[i][12],   // 原 [8] → [12]
-            reviewedBy: data[i][13],    // 原 [9] → [13]
-            reviewedAt: data[i][14],    // 原 [10] → [14]
-            reviewComment: data[i][15]  // 原 [11] → [15]
+            batchId: data[i][1],      // ⭐ 新增
+            userId: data[i][2],       // 原 [1] → [2]
+            userName: data[i][3],     // 原 [2] → [3]
+            department: data[i][4],   // 原 [3] → [4]
+            date: data[i][5],         // 原 [4] → [5]
+            weather: data[i][6],      // 原 [5] → [6]
+            location: data[i][7],     // 原 [6] → [7]
+            timeSlot: data[i][8],     // 原 [7] → [8]
+            hours: data[i][9],        // 原 [8] → [9]
+            content: data[i][10],     // 原 [9] → [10]
+            note: data[i][11],        // 原 [10] → [11]
+            status: data[i][12],      // 原 [11] → [12]
+            submittedAt: data[i][13], // 原 [12] → [13]
+            reviewedBy: data[i][14],  // 原 [13] → [14]
+            reviewedAt: data[i][15],  // 原 [14] → [15]
+            reviewComment: data[i][16]// 原 [15] → [16]
           }
         };
       }
@@ -258,6 +144,59 @@ function getWorklogDetail(worklogId) {
     
   } catch (error) {
     Logger.log('❌ getWorklogDetail 錯誤: ' + error);
+    return { success: false, message: error.message };
+  }
+}
+
+/**
+ * ✅ 新增：根據批次ID查詢所有工作日誌
+ */
+function getWorklogsByBatchId(batchId) {
+  try {
+    Logger.log('📋 查詢批次工作日誌: ' + batchId);
+    
+    if (!batchId) {
+      return { success: false, message: '缺少批次ID' };
+    }
+    
+    const sheet = getWorklogSheet();
+    const data = sheet.getDataRange().getValues();
+    const worklogs = [];
+    
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][1] === batchId) {  // 比對批次ID
+        worklogs.push({
+          id: data[i][0],
+          batchId: data[i][1],
+          userId: data[i][2],
+          userName: data[i][3],
+          department: data[i][4],
+          date: data[i][5],
+          weather: data[i][6],
+          location: data[i][7],
+          timeSlot: data[i][8],
+          hours: data[i][9],
+          content: data[i][10],
+          note: data[i][11],
+          status: data[i][12],
+          submittedAt: data[i][13],
+          reviewedBy: data[i][14],
+          reviewedAt: data[i][15],
+          reviewComment: data[i][16]
+        });
+      }
+    }
+    
+    Logger.log('✅ 找到 ' + worklogs.length + ' 筆批次工作日誌');
+    
+    return {
+      success: true,
+      worklogs: worklogs,
+      total: worklogs.length
+    };
+    
+  } catch (error) {
+    Logger.log('❌ getWorklogsByBatchId 錯誤: ' + error);
     return { success: false, message: error.message };
   }
 }
@@ -276,22 +215,23 @@ function getPendingWorklogs() {
     const pendingWorklogs = [];
     
     for (let i = 1; i < data.length; i++) {
-      if (data[i][11] === WORKLOG_STATUS.PENDING) {  // ⭐ 原 [7] → [11]
+      if (data[i][12] === WORKLOG_STATUS.PENDING) {  // ✅ M欄（索引12）= 狀態
         pendingWorklogs.push({
           rowNumber: i + 1,
-          id: data[i][0],
-          userId: data[i][1],
-          userName: data[i][2],
-          department: data[i][3],
-          date: data[i][4],
-          weather: data[i][5],      // ⭐ 新增
-          location: data[i][6],     // ⭐ 新增
-          timeSlot: data[i][7],  // ⭐ 新增
-          hours: data[i][8],        // 原 [5] → [8]
-          content: data[i][9],      // 原 [6] → [9]
-          note: data[i][10],        // ⭐ 新增
-          status: data[i][11],      // 原 [7] → [11]
-          submittedAt: data[i][12]  // 原 [8] → [12]
+          id: data[i][0],          // A: 日誌ID
+          batchId: data[i][1],     // B: 批次ID ⭐ 新增
+          userId: data[i][2],      // C: 員工ID ✅
+          userName: data[i][3],    // D: 員工姓名 ✅
+          department: data[i][4],  // E: 部門 ✅
+          date: data[i][5],        // F: 工作日期 ✅
+          weather: data[i][6],     // G: 天氣 ✅
+          location: data[i][7],    // H: 地點 ✅
+          timeSlot: data[i][8],    // I: 工作時段 ✅
+          hours: data[i][9],       // J: 工作時數 ✅
+          content: data[i][10],    // K: 工作內容 ✅
+          note: data[i][11],       // L: 備註 ✅
+          status: data[i][12],     // M: 狀態 ✅
+          submittedAt: data[i][13] // N: 提交時間 ✅
         });
       }
     }
@@ -335,8 +275,8 @@ function reviewWorklog(worklogId, action, reviewerId, reviewerName, comment) {
     for (let i = 1; i < data.length; i++) {
       if (data[i][0] === worklogId) {
         
-        // ⭐ 檢查狀態（原 [7] → [11]）
-        if (data[i][11] !== WORKLOG_STATUS.PENDING) {
+        // ⭐ 檢查狀態（M欄 = 索引12）
+        if (data[i][12] !== WORKLOG_STATUS.PENDING) {  // ✅ 正確：索引12是狀態
           Logger.log('❌ 該工作日誌已審核');
           return { success: false, message: '該工作日誌已審核，無法重複審核' };
         }
@@ -345,10 +285,10 @@ function reviewWorklog(worklogId, action, reviewerId, reviewerName, comment) {
         const reviewedAt = new Date().toISOString();
         
         // ⭐ 更新審核結果（欄位索引調整）
-        sheet.getRange(i + 1, 12).setValue(newStatus);           // L: 狀態（原 8 → 12）
-        sheet.getRange(i + 1, 14).setValue(reviewerName);        // N: 審核人（原 10 → 14）
-        sheet.getRange(i + 1, 15).setValue(reviewedAt);          // O: 審核時間（原 11 → 15）
-        sheet.getRange(i + 1, 16).setValue(comment || '');       // P: 審核意見（原 12 → 16）
+        sheet.getRange(i + 1, 13).setValue(newStatus);           // M: 狀態 ✅
+        sheet.getRange(i + 1, 15).setValue(reviewerName);        // O: 審核人 ✅
+        sheet.getRange(i + 1, 16).setValue(reviewedAt);          // P: 審核時間 ✅
+        sheet.getRange(i + 1, 17).setValue(comment || '');       // Q: 審核意見 ✅
         
         Logger.log('✅ 工作日誌審核完成');
         Logger.log('   新狀態: ' + newStatus);
@@ -414,10 +354,10 @@ function getWorklogReport(employeeId, yearMonth) {
     
     for (let i = 1; i < data.length; i++) {
       // ⭐ 處理員工ID
-      const rowUserId = String(data[i][1]).trim();
+      const rowUserId = String(data[i][2]).trim();
       
       // ⭐ 關鍵修正：處理日期物件
-      const worklogDateRaw = data[i][4];
+      const worklogDateRaw = data[i][5];
       let worklogYear, worklogMonth, worklogDay;
       let formattedDate;
       
@@ -467,15 +407,16 @@ function getWorklogReport(employeeId, yearMonth) {
       // 如果員工ID和月份都匹配，加入結果
       if (employeeMatch && monthMatch) {
         const worklog = {
-          id: data[i][0],
-          date: formattedDate,  // ⭐ 使用格式化後的日期
-          hours: parseFloat(data[i][5]) || 0,
-          content: data[i][6],
-          status: data[i][7],
-          submittedAt: data[i][8],
-          reviewedBy: data[i][9],
-          reviewedAt: data[i][10],
-          reviewComment: data[i][11]
+          id: data[i][0],          // A: 日誌ID
+          batchId: data[i][1],     // B: 批次ID ⭐ 新增
+          date: formattedDate,     // F: 工作日期
+          hours: parseFloat(data[i][9]) || 0,   // J: 工作時數 ✅
+          content: data[i][10],    // K: 工作內容 ✅
+          status: data[i][12],     // M: 狀態 ✅
+          submittedAt: data[i][13],// N: 提交時間 ✅
+          reviewedBy: data[i][14], // O: 審核人 ✅
+          reviewedAt: data[i][15], // P: 審核時間 ✅
+          reviewComment: data[i][16] // Q: 審核意見 ✅
         };
         
         worklogs.push(worklog);
@@ -515,157 +456,6 @@ function getWorklogReport(employeeId, yearMonth) {
     return { success: false, message: error.message };
   }
 }
-// ==================== 測試函數 ====================
-
-/**
- * 🧪 測試提交工作日誌
- */
-function testSubmitWorklog() {
-  Logger.log('🧪 測試提交工作日誌');
-  
-  const result = submitWorklog(
-    'U123456',
-    '測試員工',
-    '工程部',
-    '2026-01-16',
-    8.5,
-    '今日完成了以下工作：1. 修復系統 bug 2. 優化資料庫查詢 3. 參與技術會議'
-  );
-  
-  Logger.log('結果: ' + JSON.stringify(result, null, 2));
-}
-
-/**
- * 🧪 測試查詢工作日誌
- */
-function testGetWorklogs() {
-  Logger.log('🧪 測試查詢工作日誌');
-  
-  const result = getWorklogs('U123456');
-  
-  Logger.log('結果: ' + JSON.stringify(result, null, 2));
-}
-
-/**
- * 🧪 測試審核工作日誌
- */
-function testReviewWorklog() {
-  Logger.log('🧪 測試審核工作日誌');
-  
-  // 先取得待審核的工作日誌
-  const pending = getPendingWorklogs();
-  
-  if (pending.success && pending.worklogs.length > 0) {
-    const worklogId = pending.worklogs[0].id;
-    
-    const result = reviewWorklog(
-      worklogId,
-      'approve',
-      'ADMIN001',
-      '管理員',
-      '工作內容詳實，核准通過'
-    );
-    
-    Logger.log('結果: ' + JSON.stringify(result, null, 2));
-  } else {
-    Logger.log('沒有待審核的工作日誌');
-  }
-}
-
-/**
- * 🧪 測試核准工作日誌（使用便捷函數）
- */
-function testApproveWorklog() {
-  Logger.log('🧪 測試核准工作日誌');
-  
-  const pending = getPendingWorklogs();
-  
-  if (pending.success && pending.worklogs.length > 0) {
-    const worklogId = pending.worklogs[0].id;
-    
-    const result = approveWorklog(
-      worklogId,
-      'ADMIN001',
-      '管理員',
-      '工作內容詳實，核准通過'
-    );
-    
-    Logger.log('結果: ' + JSON.stringify(result, null, 2));
-  } else {
-    Logger.log('沒有待審核的工作日誌');
-  }
-}
-
-/**
- * 🧪 測試拒絕工作日誌（使用便捷函數）
- */
-function testRejectWorklog() {
-  Logger.log('🧪 測試拒絕工作日誌');
-  
-  const pending = getPendingWorklogs();
-  
-  if (pending.success && pending.worklogs.length > 0) {
-    const worklogId = pending.worklogs[0].id;
-    
-    const result = rejectWorklog(
-      worklogId,
-      'ADMIN001',
-      '管理員',
-      '工作內容不夠詳細，請補充說明'
-    );
-    
-    Logger.log('結果: ' + JSON.stringify(result, null, 2));
-  } else {
-    Logger.log('沒有待審核的工作日誌');
-  }
-}
-
-/**
- * 🧪 測試修正後的 getWorklogReport 函數
- */
-function testFixedWorklogReport() {
-  Logger.log('🧪 測試修正後的工作日誌匯出功能');
-  
-  // ⭐ 使用實際存在的員工ID
-  const tests = [
-    { id: 'U1771fd65da16e2f2000a3c3805fbe256', name: '洪培瑜Eric' },
-    { id: 'U123456', name: '測試員工' }
-  ];
-  
-  tests.forEach(test => {
-    Logger.log('\n' + '='.repeat(60));
-    Logger.log('🔍 測試員工: ' + test.name);
-    Logger.log('   員工ID: ' + test.id);
-    Logger.log('   年月: 2026-01');
-    Logger.log('='.repeat(60));
-    
-    // ⭐ 呼叫修正後的 getWorklogReport（不是 Debug 版本）
-    const result = getWorklogReport(test.id, '2026-01');
-    
-    Logger.log('\n📊 結果:');
-    Logger.log('   成功: ' + result.success);
-    Logger.log('   找到筆數: ' + result.worklogs.length);
-    
-    if (result.worklogs && result.worklogs.length > 0) {
-      Logger.log('\n✅ 工作日誌列表:');
-      result.worklogs.forEach((log, index) => {
-        Logger.log(`   [${index + 1}] ${log.date} - ${log.hours}小時 - ${log.status}`);
-        Logger.log(`       內容: ${log.content.substring(0, 50)}...`);
-      });
-      
-      Logger.log('\n📈 統計:');
-      Logger.log('   總時數: ' + result.summary.totalHours);
-      Logger.log('   已核准時數: ' + result.summary.approvedHours);
-    } else {
-      Logger.log('   ⚠️ 沒有找到工作日誌');
-    }
-  });
-  
-  Logger.log('\n' + '='.repeat(60));
-  Logger.log('✅ 測試完成');
-  Logger.log('='.repeat(60));
-}
-
 
 /**
  * ✅ 取得所有員工指定月份的工作日誌報表
@@ -690,7 +480,7 @@ function getAllWorklogReport(yearMonth) {
     
     for (let i = 1; i < data.length; i++) {
       // 處理日期
-      const worklogDateRaw = data[i][4];
+      const worklogDateRaw = data[i][5];
       let worklogYear, worklogMonth, worklogDay;
       let formattedDate;
       
@@ -720,18 +510,19 @@ function getAllWorklogReport(yearMonth) {
       // 檢查年月是否匹配
       if (worklogYear === targetYear && worklogMonth === targetMonth) {
         worklogs.push({
-          id: data[i][0],
-          userId: data[i][1],
-          userName: data[i][2],
-          department: data[i][3],
-          date: formattedDate,
-          hours: parseFloat(data[i][5]) || 0,
-          content: data[i][6],
-          status: data[i][7],
-          submittedAt: data[i][8],
-          reviewedBy: data[i][9],
-          reviewedAt: data[i][10],
-          reviewComment: data[i][11]
+          id: data[i][0],          // A
+          batchId: data[i][1],     // B ⭐ 新增
+          userId: data[i][2],      // C ✅
+          userName: data[i][3],    // D ✅
+          department: data[i][4],  // E ✅
+          date: formattedDate,     // F
+          hours: parseFloat(data[i][9]) || 0,  // J ✅
+          content: data[i][10],    // K ✅
+          status: data[i][12],     // M ✅
+          submittedAt: data[i][13],// N ✅
+          reviewedBy: data[i][14], // O ✅
+          reviewedAt: data[i][15], // P ✅
+          reviewComment: data[i][16] // Q ✅
         });
       }
     }
@@ -786,12 +577,12 @@ function getWorklogMonthlyStats(yearMonth) {
     const employeeStats = {};
     
     for (let i = 1; i < data.length; i++) {
-      const userId = String(data[i][1]).trim();
-      const userName = data[i][2];
-      const department = data[i][3];
-      const worklogDateRaw = data[i][4];
-      const hours = parseFloat(data[i][5]) || 0;
-      const status = data[i][7];
+      const userId = String(data[i][2]).trim();  // ✅ C欄：員工ID
+      const userName = data[i][3];               // ✅ D欄：員工姓名
+      const department = data[i][4];             // ✅ E欄：部門
+      const worklogDateRaw = data[i][5];         // ✅ F欄：工作日期
+      const hours = parseFloat(data[i][9]) || 0; // ✅ J欄：工作時數
+      const status = data[i][12];                // ✅ M欄：狀態 
       
       // 處理日期
       let worklogYear, worklogMonth;
@@ -854,131 +645,213 @@ function getWorklogMonthlyStats(yearMonth) {
   }
 }
 
-/**
- * 🧪 測試當月統計功能
- */
-function testWorklogMonthlyStats() {
-  Logger.log('🧪 測試當月工作日誌統計');
-  
-  // 測試當月
-  const now = new Date();
-  const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  
-  const result = getWorklogMonthlyStats(yearMonth);
-  
-  Logger.log('\n結果:');
-  Logger.log('  成功: ' + result.success);
-  Logger.log('  員工數: ' + (result.stats ? result.stats.length : 0));
-  
-  if (result.stats && result.stats.length > 0) {
-    Logger.log('\n員工統計:');
-    result.stats.forEach((stat, index) => {
-      Logger.log(`  [${index + 1}] ${stat.userName} (${stat.department})`);
-      Logger.log(`      填寫天數: ${stat.totalDays} 天`);
-      Logger.log(`      總工時: ${stat.totalHours} 小時`);
-      Logger.log(`      已核准工時: ${stat.approvedHours} 小時`);
-    });
-  }
-}
 
 /**
- * 🧪 完整流程測試（模擬前端呼叫）
+ * ✅ 更新工作日誌（支援批量更新）
  */
-function testCompleteWorklogFlow() {
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('🧪 完整工作日誌流程測試');
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('');
-  
-  const token = 'eaf9bca2-63e8-4582-abd3-9951be95c597';  // ⚠️ 替換成你的有效 token
-  
-  // Step 1: 模擬前端載入員工列表
-  Logger.log('📡 Step 1: 載入員工列表');
-  const usersResult = handleGetAllUsers({ token: token });
-  
-  Logger.log('   結果: ' + (usersResult.ok ? '成功' : '失敗'));
-  Logger.log('   員工數: ' + (usersResult.users ? usersResult.users.length : 0));
-  
-  if (!usersResult.ok || !usersResult.users || usersResult.users.length === 0) {
-    Logger.log('');
-    Logger.log('❌❌❌ Step 1 失敗，無法繼續');
-    Logger.log('   原因: ' + usersResult.msg);
+function updateWorklog(worklogId, date, hours, content, weather, location, timeSlot, note, updateBatch) {
+  try {
     Logger.log('═══════════════════════════════════════');
-    return;
-  }
-  
-  Logger.log('   ✅ 員工列表載入成功');
-  Logger.log('');
-  
-  // Step 2: 模擬前端提交批量工作日誌
-  Logger.log('📡 Step 2: 提交批量工作日誌');
-  
-  const testEmployee = usersResult.users[0];  // 使用第一位員工
-  
-  Logger.log('   選擇的員工: ' + testEmployee.name + ' (' + testEmployee.userId + ')');
-  Logger.log('');
-  
-  const worklogParams = {
-    token: token,
-    targetUserId: testEmployee.userId,
-    targetUserName: testEmployee.name,
-    targetUserDept: testEmployee.dept || '未分配',
-    date: '2026-01-26',
-    weather: '晴天',
-    location: '測試地點',
-    serialNumber: 'TEST001',
-    hours: '8',
-    content: '這是完整流程測試的工作日誌內容，用於驗證批量提交功能是否正常運作。',
-    note: '測試備註'
-  };
-  
-  Logger.log('📝 提交工作日誌參數:');
-  Logger.log('   員工: ' + worklogParams.targetUserName);
-  Logger.log('   日期: ' + worklogParams.date);
-  Logger.log('   時數: ' + worklogParams.hours);
-  Logger.log('');
-  
-  const submitResult = handleSubmitWorklog(worklogParams);
-  
-  Logger.log('📤 提交結果:');
-  Logger.log('   ok: ' + submitResult.ok);
-  Logger.log('   msg: ' + submitResult.msg);
-  Logger.log('   worklogId: ' + (submitResult.worklogId || '無'));
-  Logger.log('');
-  
-  if (submitResult.ok) {
-    Logger.log('✅✅✅ 完整流程測試成功！');
-    Logger.log('');
-    Logger.log('📋 請檢查「工作日誌」工作表:');
-    Logger.log('   - 應該有一筆新的待審核記錄');
-    Logger.log('   - 員工姓名: ' + testEmployee.name);
-    Logger.log('   - 工作日期: 2026-01-26');
-    Logger.log('   - 天氣: 晴天');
-    Logger.log('   - 地點: 測試地點');
-  } else {
-    Logger.log('❌ Step 2 失敗');
-    Logger.log('   原因: ' + submitResult.msg);
-  }
-  
-  Logger.log('');
-  Logger.log('═══════════════════════════════════════');
-}
-
-function testCompleteWorklogFlow() {
-    const worklogParams = {
-        token: 'eaf9bca2-63e8-4582-abd3-9951be95c597',
-        targetUserId: '員工ID',
-        targetUserName: '員工姓名',
-        targetUserDept: '部門',
-        date: '2026-01-27',
-        weather: '晴天',
-        location: '測試地點',
-        timeSlot: '08-17',      // ⭐ 工作時段
-        hours: '8',
-        content: '測試工作內容...asf',
-        note: ''
+    Logger.log('📝 更新工作日誌');
+    Logger.log('   日誌ID: ' + worklogId);
+    Logger.log('   批量更新: ' + (updateBatch ? '是' : '否'));
+    Logger.log('═══════════════════════════════════════');
+    
+    // 驗證參數
+    if (!date || !hours || !content) {
+      return { success: false, message: '缺少必要參數' };
+    }
+    
+    if (!weather || !location) {
+      return { success: false, message: '缺少天氣或地點資訊' };
+    }
+    
+    const hoursNum = parseFloat(hours);
+    if (isNaN(hoursNum) || hoursNum <= 0 || hoursNum > 24) {
+      return { success: false, message: '工作時數必須在 0.5 ~ 24 小時之間' };
+    }
+    
+    if (content.trim().length < 2) {
+      return { success: false, message: '工作內容至少需要 2 個字' };
+    }
+    
+    const sheet = getWorklogSheet();
+    const data = sheet.getDataRange().getValues();
+    
+    // ⭐ 先找到目標記錄的批次ID
+    let targetBatchId = null;
+    let targetRow = -1;
+    
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === worklogId) {
+        targetBatchId = data[i][1];  // 批次ID
+        targetRow = i;
+        
+        // 檢查狀態
+        if (data[i][12] !== WORKLOG_STATUS.PENDING) {
+          Logger.log('❌ 該工作日誌已審核，無法修改');
+          return { success: false, message: '已審核的工作日誌無法修改' };
+        }
+        break;
+      }
+    }
+    
+    if (targetRow === -1) {
+      Logger.log('❌ 找不到工作日誌');
+      return { success: false, message: '找不到工作日誌' };
+    }
+    
+    // ⭐ 決定更新範圍
+    const rowsToUpdate = [];
+    
+    if (updateBatch && targetBatchId) {
+      // 批量更新：找出所有相同批次ID的記錄
+      for (let i = 1; i < data.length; i++) {
+        if (data[i][1] === targetBatchId && data[i][12] === WORKLOG_STATUS.PENDING) {
+          rowsToUpdate.push(i);
+        }
+      }
+      Logger.log(`   找到 ${rowsToUpdate.length} 筆待更新記錄`);
+    } else {
+      // 單筆更新
+      rowsToUpdate.push(targetRow);
+    }
+    
+    // ⭐ 執行更新
+    for (const rowIndex of rowsToUpdate) {
+      sheet.getRange(rowIndex + 1, 6).setValue(date);              // 
+      sheet.getRange(rowIndex + 1, 7).setValue(weather.trim());    // ✅ G欄對了（天氣）
+      sheet.getRange(rowIndex + 1, 8).setValue(location.trim());   // ✅ H欄對了（地點）
+      sheet.getRange(rowIndex + 1, 9).setValue(timeSlot || '');    // ✅ I欄對了（工作時段）
+      sheet.getRange(rowIndex + 1, 10).setValue(hoursNum);         // ✅ J欄對了（工作時數）
+      sheet.getRange(rowIndex + 1, 11).setValue(content.trim());   // ✅ K欄對了（工作內容）
+      // ⭐ 注意：備註不批量更新，保留各自的備註
+      if (!updateBatch) {
+        sheet.getRange(rowIndex + 1, 12).setValue(note ? note.trim() : '');  // ✅ L欄對了（備註）
+      }
+    }
+    
+    Logger.log('✅ 工作日誌更新成功');
+    Logger.log('   更新筆數: ' + rowsToUpdate.length);
+    Logger.log('═══════════════════════════════════════');
+    
+    return {
+      success: true,
+      message: '工作日誌更新成功',
+      updatedCount: rowsToUpdate.length
     };
     
-    const result = handleSubmitWorklog(worklogParams);
-    Logger.log('結果: ' + JSON.stringify(result));
+  } catch (error) {
+    Logger.log('❌ updateWorklog 錯誤: ' + error);
+    return { success: false, message: error.message };
+  }
+}
+
+
+/**
+ * ✅ 提交工作日誌（完整版 - 支援批次ID）
+ */
+function submitWorklog(userId, userName, department, date, hours, content, 
+                       weather, location, timeSlot, note, batchId) {
+  try {
+    Logger.log('═══════════════════════════════════════');
+    Logger.log('📝 開始提交工作日誌（完整版）');
+    Logger.log('   員工: ' + userName);
+    Logger.log('   批次ID: ' + (batchId || '單筆提交'));
+    Logger.log('═══════════════════════════════════════');
+    
+    // ⭐ 驗證必要參數
+    if (!userId || !userName || !date) {
+      Logger.log('❌ 缺少必要參數');
+      return { success: false, message: '缺少必要參數' };
+    }
+    
+    if (!weather || weather.trim().length === 0) {
+      Logger.log('❌ 缺少天氣資訊');
+      return { success: false, message: '請選擇天氣' };
+    }
+    
+    if (!location || location.trim().length === 0) {
+      Logger.log('❌ 缺少地點資訊');
+      return { success: false, message: '請填寫工作地點' };
+    }
+    
+    if (!timeSlot || timeSlot.trim().length === 0) {
+      Logger.log('❌ 缺少工作時段');
+      return { success: false, message: '請填寫工作時段' };
+    }
+    
+    // 驗證工作時數
+    const hoursNum = parseFloat(hours);
+    if (isNaN(hoursNum) || hoursNum <= 0 || hoursNum > 24) {
+      Logger.log('❌ 工作時數無效: ' + hours);
+      return { success: false, message: '工作時數必須在 0.5 ~ 24 小時之間' };
+    }
+    
+    // 驗證工作內容
+    if (!content || content.trim().length < 2) {
+      Logger.log('❌ 工作內容太短: ' + (content ? content.length : 0));
+      return { success: false, message: '工作內容至少需要 2 個字' };
+    }
+    
+    Logger.log('✅ 參數驗證通過');
+    Logger.log('   日期: ' + date);
+    Logger.log('   天氣: ' + weather);
+    Logger.log('   地點: ' + location);
+    Logger.log('   工作時段: ' + timeSlot);
+    Logger.log('   工作時數: ' + hoursNum);
+    Logger.log('   工作內容長度: ' + content.trim().length);
+    Logger.log('   備註長度: ' + (note ? note.trim().length : 0));
+    
+    // 取得工作表
+    const sheet = getWorklogSheet();
+    
+    // 生成日誌ID
+    const worklogId = 'WL_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    const submittedAt = new Date().toISOString();
+    
+    Logger.log('📋 生成日誌ID: ' + worklogId);
+    
+    // ⭐ 新增工作日誌（17 欄，包含批次ID）
+    const newRow = [
+      worklogId,                    // A: 日誌ID
+      batchId || '',                // B: 批次ID ⭐ 新增
+      userId,                       // C: 員工ID
+      userName,                     // D: 員工姓名
+      department,                   // E: 部門
+      date,                         // F: 工作日期
+      weather.trim(),               // G: 天氣
+      location.trim(),              // H: 地點
+      timeSlot || '',               // I: 工作時段
+      hoursNum,                     // J: 工作時數
+      content.trim(),               // K: 工作內容
+      note ? note.trim() : '',      // L: 備註
+      WORKLOG_STATUS.PENDING,       // M: 狀態
+      submittedAt,                  // N: 提交時間
+      '',                           // O: 審核人
+      '',                           // P: 審核時間
+      ''                            // Q: 審核意見
+    ];
+    
+    Logger.log('📤 準備寫入資料...');
+    
+    // 寫入工作表
+    sheet.appendRow(newRow);
+    
+    Logger.log('✅ 工作日誌提交成功');
+    Logger.log('   日誌ID: ' + worklogId);
+    Logger.log('   批次ID: ' + (batchId || '無'));
+    Logger.log('═══════════════════════════════════════');
+    
+    return {
+      success: true,
+      message: '工作日誌提交成功',
+      worklogId: worklogId
+    };
+    
+  } catch (error) {
+    Logger.log('❌ submitWorklog 錯誤: ' + error);
+    Logger.log('   錯誤堆疊: ' + error.stack);
+    return { success: false, message: error.message };
+  }
 }

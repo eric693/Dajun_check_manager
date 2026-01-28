@@ -1266,48 +1266,6 @@ function getUserIdFromSession(token) {
 }
 
 // ==================== 測試函數 ====================
-
-/**
- * 🧪 測試取得我的薪資
- */
-function testHandleGetMySalary() {
-  Logger.log('🧪🧪🧪 測試 handleGetMySalary');
-  Logger.log('');
-  
-  const testParams = {
-    token: '04fd1452-4aca-4b03-ad17-45f03144c6ff',  // ⚠️ 替換成有效的 token
-    yearMonth: '2025-11'
-  };
-  
-  Logger.log('📥 測試參數:');
-  Logger.log('   token: ' + testParams.token.substring(0, 20) + '...');
-  Logger.log('   yearMonth: ' + testParams.yearMonth);
-  Logger.log('');
-  
-  const result = handleGetMySalary(testParams);
-  
-  Logger.log('');
-  Logger.log('📤 最終結果:');
-  Logger.log(JSON.stringify(result, null, 2));
-  Logger.log('');
-  
-  if (result.ok) {
-    Logger.log('✅✅✅ 測試成功！');
-    if (result.data) {
-      Logger.log('');
-      Logger.log('💰 薪資資料:');
-      Logger.log('   員工姓名: ' + result.data['員工姓名']);
-      Logger.log('   年月: ' + result.data['年月']);
-      Logger.log('   實發金額: ' + result.data['實發金額']);
-    }
-  } else {
-    Logger.log('❌ 測試失敗');
-    Logger.log('   原因: ' + result.msg);
-  }
-}
-
-// DailySalaryHandlers.gs - 日薪系統 Handler 函數
-
 /**
  * ✅ 處理設定日薪員工
  */

@@ -515,33 +515,6 @@ function getLeaveBalanceSheet() {
   return sheet;
 }
 
-function testGetLeaveBalance() {
-  // ⚠️ 替換成你的 sessionToken
-  const token = '7dac1161-bbac-487d-900b-3e06c1acab8d';
-  
-  Logger.log('🧪 開始測試 getLeaveBalance');
-  Logger.log('');
-  
-  const result = getLeaveBalance(token);
-  
-  Logger.log('📤 測試結果:');
-  Logger.log(JSON.stringify(result, null, 2));
-  
-  if (result.ok) {
-    Logger.log('');
-    Logger.log('✅ 測試成功！');
-    Logger.log('');
-    Logger.log('假期餘額:');
-    for (const [key, value] of Object.entries(result.balance)) {
-      Logger.log(`   ${key}: ${value}`);
-    }
-  } else {
-    Logger.log('');
-    Logger.log('❌ 測試失敗');
-    Logger.log('錯誤碼: ' + result.code);
-  }
-}
-
 /**
  * ✅ 修正：初始化假期餘額（改為小時制）
  */
@@ -785,47 +758,6 @@ function formatDateTime(date) {
 }
 
 /**
- * 🧪 測試函數
- */
-function testSubmitLeaveWithHours() {
-  Logger.log('🧪 測試小時制請假申請');
-  Logger.log('');
-  
-  const testParams = {
-    token: '7dac1161-bbac-487d-900b-3e06c1acab8d',  // ⚠️ 替換成有效 token
-    leaveType: 'BEREAVEMENT_LEAVE',
-    startDateTime: '2025-12-18T09:00',
-    endDateTime: '2025-12-18T12:00',
-    reason: '測試請假（小時制）'
-  };
-  
-  Logger.log('📥 測試參數:');
-  Logger.log(JSON.stringify(testParams, null, 2));
-  Logger.log('');
-  
-  const result = submitLeaveRequest(
-    testParams.token,
-    testParams.leaveType,
-    testParams.startDateTime,
-    testParams.endDateTime,
-    testParams.reason
-  );
-  
-  Logger.log('');
-  Logger.log('📤 測試結果:');
-  Logger.log(JSON.stringify(result, null, 2));
-  
-  if (result.ok) {
-    Logger.log('');
-    Logger.log('✅✅✅ 測試成功！');
-    Logger.log('請檢查 Google Sheet 的「請假紀錄」工作表');
-  } else {
-    Logger.log('');
-    Logger.log('❌ 測試失敗');
-  }
-}
-
-/**
  * 🔄 遷移假期餘額工作表（8欄 → 17欄）
  * 
  * 使用方式：
@@ -983,52 +915,6 @@ function migrateLeaveBalanceSheet() {
     Browser.Buttons.OK
   );
 }
-
-/**
- * 🧪 測試函數
- */
-function testLeaveBalanceComplete() {
-  Logger.log('🧪 測試完整的假期餘額系統');
-  Logger.log('');
-  
-  const token = '7dac1161-bbac-487d-900b-3e06c1acab8d';  // ⚠️ 替換成有效 token
-  
-  Logger.log('📋 步驟 1：初始化假期餘額');
-  const initResult = initializeEmployeeLeave(token);
-  Logger.log('   結果: ' + JSON.stringify(initResult));
-  Logger.log('');
-  
-  Logger.log('📋 步驟 2：查詢假期餘額');
-  const balanceResult = getLeaveBalance(token);
-  Logger.log('   結果: ' + JSON.stringify(balanceResult, null, 2));
-  Logger.log('');
-  
-  if (balanceResult.ok) {
-    Logger.log('✅✅✅ 測試成功！');
-    Logger.log('');
-    Logger.log('📊 假期餘額:');
-    const balance = balanceResult.balance;
-    Logger.log('   特休假: ' + balance.annualLeave + ' 天');
-    Logger.log('   病假: ' + balance.sickLeave + ' 天');
-    Logger.log('   事假: ' + balance.personalLeave + ' 天');
-    Logger.log('   喪假: ' + balance.bereavementLeave + ' 天');
-    Logger.log('   婚假: ' + balance.marriageLeave + ' 天');
-    Logger.log('   產假: ' + balance.maternityLeave + ' 天');
-    Logger.log('   陪產假: ' + balance.paternityLeave + ' 天');
-    Logger.log('   產檢假: ' + balance.prenatalCheckupLeave + ' 天');
-    Logger.log('   生理假: ' + balance.menstrualLeave + ' 天');
-    Logger.log('   家庭照顧假: ' + balance.familyCareLeave + ' 天');
-    Logger.log('   公假: ' + (balance.officialLeave === 0 ? '無上限' : balance.officialLeave + ' 天'));
-    Logger.log('   公傷病假: ' + (balance.occupationalInjuryLeave === 0 ? '無上限' : balance.occupationalInjuryLeave + ' 天'));
-    Logger.log('   疫苗接種假: ' + (balance.vaccinationLeave === 0 ? '無上限' : balance.vaccinationLeave + ' 天'));
-    Logger.log('   防疫照顧假: ' + (balance.epidemicCareLeave === 0 ? '無上限' : balance.epidemicCareLeave + ' 天'));
-  } else {
-    Logger.log('❌ 測試失敗');
-  }
-}
-
-// LeaveManagement.gs - 小時制請假系統（完整修正版 + 餘額扣除）
-
 /**
  * ✅ 審核請假申請（完全修正版：審核時更新正確工時）
  */
@@ -1545,102 +1431,6 @@ function deductLeaveBalance(userId, leaveType, hours) {
     };
   }
 }
-/**
- * 🧪 測試扣除餘額功能
- */
-function testDeductLeaveBalance() {
-  Logger.log('🧪 測試扣除假期餘額');
-  Logger.log('');
-  
-  // ⚠️ 請替換成實際的員工ID
-  const testUserId = 'U7854bd6965d1c25b1c79d00c1dce001b'; // 從 LINE 取得的 userId
-  
-  Logger.log('📋 測試參數:');
-  Logger.log(`   員工ID: ${testUserId}`);
-  Logger.log(`   假別: ANNUAL_LEAVE (特休假)`);
-  Logger.log(`   天數: 0.25 (2 小時)`);
-  Logger.log('');
-  
-  const result = deductLeaveBalance(testUserId, 'ANNUAL_LEAVE', 0.25);
-  
-  Logger.log('📤 測試結果:');
-  Logger.log(JSON.stringify(result, null, 2));
-  
-  if (result.ok) {
-    Logger.log('');
-    Logger.log('✅ 測試成功！');
-    Logger.log(`   剩餘餘額: ${result.remaining} 天`);
-  } else {
-    Logger.log('');
-    Logger.log('❌ 測試失敗');
-  }
-}
-
-/**
- * 🧪 完整測試：提交 → 審核 → 扣除餘額
- */
-function testCompleteLeaveFlow() {
-  Logger.log('🧪 測試完整請假流程');
-  Logger.log('');
-  
-  const token = '7dac1161-bbac-487d-900b-3e06c1acab8d'; // ⚠️ 替換成有效 token
-  
-  // 步驟 1：提交請假
-  Logger.log('📋 步驟 1：提交請假申請');
-  const submitResult = submitLeaveRequest(
-    token,
-    'ANNUAL_LEAVE',
-    '2025-12-19T09:00',
-    '2025-12-19T11:00',
-    '測試完整流程'
-  );
-  
-  Logger.log('   結果: ' + JSON.stringify(submitResult));
-  
-  if (!submitResult.ok) {
-    Logger.log('❌ 提交失敗，測試終止');
-    return;
-  }
-  
-  Logger.log('');
-  
-  // 步驟 2：查詢餘額（扣除前）
-  Logger.log('📋 步驟 2：查詢餘額（扣除前）');
-  const balanceBefore = getLeaveBalance(token);
-  Logger.log('   特休假餘額: ' + balanceBefore.balance.ANNUAL_LEAVE + ' 天');
-  Logger.log('');
-  
-  // 步驟 3：審核請假（需要手動指定 rowNumber）
-  Logger.log('📋 步驟 3：審核請假申請');
-  Logger.log('   ⚠️ 請手動查看「請假紀錄」工作表的最後一行行號');
-  Logger.log('   然後修改下面的 rowNumber');
-  
-  const rowNumber = 2; // ⚠️ 替換成實際行號
-  
-  const reviewResult = reviewLeaveRequest(token, rowNumber, 'approve', '核准測試');
-  Logger.log('   結果: ' + JSON.stringify(reviewResult));
-  Logger.log('');
-  
-  // 步驟 4：查詢餘額（扣除後）
-  Logger.log('📋 步驟 4：查詢餘額（扣除後）');
-  const balanceAfter = getLeaveBalance(token);
-  Logger.log('   特休假餘額: ' + balanceAfter.balance.ANNUAL_LEAVE + ' 天');
-  Logger.log('');
-  
-  // 比較
-  Logger.log('📊 比較結果:');
-  Logger.log(`   扣除前: ${balanceBefore.balance.ANNUAL_LEAVE} 天`);
-  Logger.log(`   扣除後: ${balanceAfter.balance.ANNUAL_LEAVE} 天`);
-  Logger.log(`   差異: ${balanceBefore.balance.ANNUAL_LEAVE - balanceAfter.balance.ANNUAL_LEAVE} 天`);
-  Logger.log('');
-  
-  if (balanceBefore.balance.ANNUAL_LEAVE > balanceAfter.balance.ANNUAL_LEAVE) {
-    Logger.log('✅✅✅ 測試成功！餘額已正確扣除');
-  } else {
-    Logger.log('❌ 測試失敗：餘額未扣除');
-  }
-}
-
 
 /**
  * 🔄 遷移工具：將現有假期餘額加上姓名欄位（17欄 → 18欄）

@@ -36,6 +36,8 @@ function handleSubmitWorklog(params) {
     const hours = params.hours;
     const content = params.content;
     const note = params.note || '';              // ⭐ 新增
+    const batchId = params.batchId || '';  // ⭐ 新增批次ID
+
     
     Logger.log('📥 收到的參數:');
     Logger.log('   日期: ' + date);
@@ -57,7 +59,8 @@ function handleSubmitWorklog(params) {
       weather,      // ⭐
       location,     // ⭐
       timeSlot, // ⭐
-      note          // ⭐
+      note,          // ⭐
+      batchId  // ⭐ 新增
     );
     
     Logger.log('📤 處理結果: ' + result.success);
@@ -75,6 +78,39 @@ function handleSubmitWorklog(params) {
   }
 }
 
+/**
+ * ✅ 新增：處理查詢批次工作日誌
+ */
+function handleGetWorklogsByBatchId(params) {
+  try {
+    if (!params.token) {
+      return { ok: false, msg: "缺少認證 token" };
+    }
+    
+    const session = checkSession_(params.token);
+    
+    if (!session.ok || !session.user) {
+      return { ok: false, msg: "未授權或 session 已過期" };
+    }
+    
+    if (!params.batchId) {
+      return { ok: false, msg: "缺少批次ID" };
+    }
+    
+    const result = getWorklogsByBatchId(params.batchId);
+    
+    return {
+      ok: result.success,
+      worklogs: result.worklogs,
+      total: result.total,
+      msg: result.message || '查詢成功'
+    };
+    
+  } catch (error) {
+    Logger.log('❌ handleGetWorklogsByBatchId 錯誤: ' + error);
+    return { ok: false, msg: error.message };
+  }
+}
 /**
  * ✅ 處理取得工作日誌列表
  */
@@ -303,56 +339,6 @@ function handleGetWorklogReport(params) {
     return { ok: false, msg: error.message };
   }
 }
-// ==================== 測試函數 ====================
-
-/**
- * 🧪 測試提交工作日誌 API
- */
-function testHandleSubmitWorklog() {
-  Logger.log('🧪 測試 handleSubmitWorklog');
-  
-  const testParams = {
-    token: '你的有效token',  // ⚠️ 替換成有效的 token
-    date: '2026-01-16',
-    hours: '8.5',
-    content: '測試工作日誌內容：完成系統開發、修復 bug、參與會議討論。'
-  };
-  
-  const result = handleSubmitWorklog(testParams);
-  Logger.log('結果: ' + JSON.stringify(result, null, 2));
-}
-
-/**
- * 🧪 測試查詢工作日誌 API
- */
-function testHandleGetWorklogs() {
-  Logger.log('🧪 測試 handleGetWorklogs');
-  
-  const testParams = {
-    token: '71cff111-bdd2-4c44-ae34-ba86265d1c78',
-    limit: 10
-  };
-  
-  const result = handleGetWorklogs(testParams);
-  Logger.log('結果: ' + JSON.stringify(result, null, 2));
-}
-
-/**
- * 🧪 測試審核工作日誌 API
- */
-function testHandleReviewWorklog() {
-  Logger.log('🧪 測試 handleReviewWorklog');
-  
-  const testParams = {
-    token: '71cff111-bdd2-4c44-ae34-ba86265d1c78',  // ⚠️ 需要管理員權限
-    id: 'WL_1234567890',  // ⚠️ 替換成實際的工作日誌 ID
-    action: 'approve',
-    comment: '工作內容詳實，核准通過'
-  };
-  
-  const result = handleReviewWorklog(testParams);
-  Logger.log('結果: ' + JSON.stringify(result, null, 2));
-}
 
 /**
  * ✅ 處理取得全部員工工作日誌報表
@@ -439,6 +425,62 @@ function handleGetWorklogMonthlyStats(params) {
     
   } catch (error) {
     Logger.log('❌ handleGetWorklogMonthlyStats 錯誤: ' + error);
+    return { ok: false, msg: error.message };
+  }
+}
+
+
+/**
+ * ✅ 處理更新工作日誌
+ */
+function handleUpdateWorklog(params) {
+  try {
+    Logger.log('📝 handleUpdateWorklog 開始');
+    
+    if (!params.token) {
+      return { ok: false, msg: "缺少認證 token" };
+    }
+    
+    const session = checkSession_(params.token);
+    
+    if (!session.ok || !session.user) {
+      return { ok: false, msg: "未授權或 session 已過期" };
+    }
+    
+    const worklogId = params.id;
+    const date = params.date;
+    const hours = params.hours;
+    const content = params.content;
+    const weather = params.weather;
+    const location = params.location;
+    const timeSlot = params.timeSlot || params.serialNumber || '';
+    const note = params.note || '';
+    const updateBatch = params.updateBatch === 'true';
+    
+    Logger.log('   日誌ID: ' + worklogId);
+    
+    const result = updateWorklog(
+      worklogId,
+      date,
+      hours,
+      content,
+      weather,
+      location,
+      timeSlot,
+      note,
+      updateBatch  // ⭐ 新增
+    );
+    
+    Logger.log('   結果: ' + result.success);
+    
+    return {
+      ok: result.success,
+      msg: result.message,
+      updatedCount: result.updatedCount  // ⭐ 新增
+    };
+    
+  } catch (error) {
+    Logger.log('❌ handleUpdateWorklog 錯誤: ' + error);
     return { ok: false, msg: error.message };
   }
 }
